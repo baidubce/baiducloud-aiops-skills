@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-09-03T00:00:00Z",
+  "mode": "offline",
+  "endpoint": "offline",
+  "selection": {
+    "requestedZones": [],
+    "unmatchedZones": []
+  },
+  "coverage": {
+    "listZones": {
+      "status": "success",
+      "count": 2,
+      "queries": 1,
+      "failedQueries": 0
+    },
+    "listRecords": {
+      "status": "partial",
+      "successfulZones": 1,
+      "failedZones": 1,
+      "recordCount": 9
+    }
+  },
+  "zones": [
+    {
+      "id": "zone-demo-1",
+      "name": "example.com",
+      "status": "running",
+      "productVersion": "free",
+      "createTime": "2026-01-01 10:00:00",
+      "expireTime": "2099-12-31 23:59:59",
+      "tags": [],
+      "_recordsStatus": "success",
+      "records": [
+        {"id": "r-1", "rr": "www", "status": "running", "type": "A", "value": "203.0.113.10", "ttl": 300, "line": "default", "description": "demo"},
+        {"id": "r-2", "rr": "www", "status": "running", "type": "A", "value": "203.0.113.10", "ttl": 300, "line": "default", "description": "duplicate"},
+        {"id": "r-3", "rr": "api", "status": "running", "type": "CNAME", "value": "origin.example.net", "ttl": 300, "line": "default", "description": ""},
+        {"id": "r-4", "rr": "api", "status": "running", "type": "A", "value": "198.51.100.9", "ttl": 300, "line": "default", "description": "conflict"},
+        {"id": "r-5", "rr": "bad-v6", "status": "running", "type": "AAAA", "value": "not-an-ip", "ttl": 300, "line": "default", "description": ""},
+        {"id": "r-6", "rr": "mail", "status": "running", "type": "MX", "value": "mail.example.com", "priority": 60, "ttl": 300, "line": "default", "description": ""},
+        {"id": "r-7", "rr": "*", "status": "running", "type": "A", "value": "192.168.1.10", "ttl": 300, "line": "default", "description": "wildcard"},
+        {"id": "r-8", "rr": "cdn", "status": "running", "type": "A", "value": "198.51.100.20", "ttl": 300, "line": "ct", "description": "no default"},
+        {"id": "r-9", "rr": "paused", "status": "stopped", "type": "TXT", "value": "planned", "ttl": 300, "line": "default", "description": ""}
+      ]
+    },
+    {
+      "id": "zone-demo-2",
+      "name": "example.net",
+      "status": "nsunchange",
+      "productVersion": "discount",
+      "createTime": "2026-01-01 10:00:00",
+      "expireTime": "2099-12-31 23:59:59",
+      "tags": [],
+      "_recordsStatus": "failed",
+      "records": []
+    }
+  ],
+  "errors": [
+    {
+      "operation": "listRecords",
+      "scope": "example.net",
+      "status": 403,
+      "code": "AccessDenied",
+      "message": "sample permission failure",
+      "path": "/v1/dns/zone/example.net/record"
+    }
+  ]
+}
