@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-09-02T00:00:00Z",
+  "mode": "fixture",
+  "regions": {
+    "bj": {
+      "endpoint": "https://bcc.bj.baidubce.com",
+      "coverage": {
+        "vpcs": {"status": "success", "count": 1, "queries": 1, "failedQueries": 0},
+        "securityGroups": {"status": "success", "count": 1, "queries": 1, "failedQueries": 0},
+        "enterpriseSecurityGroups": {"status": "success", "count": 1, "queries": 1, "failedQueries": 0},
+        "acls": {"status": "success", "count": 1, "queries": 1, "failedQueries": 0}
+      },
+      "resources": {
+        "vpcs": [{"vpcId": "vpc-example", "name": "fixture"}],
+        "securityGroups": [
+          {
+            "id": "g-example",
+            "name": "public-admin",
+            "vpcId": "vpc-example",
+            "rules": [
+              {
+                "securityGroupRuleId": "r-sg-public-all",
+                "direction": "ingress",
+                "ethertype": "IPv4",
+                "protocol": "all",
+                "sourceIp": "0.0.0.0/0",
+                "portRange": "1-65535"
+              }
+            ]
+          }
+        ],
+        "enterpriseSecurityGroups": [
+          {
+            "id": "esg-example",
+            "name": "priority-conflict",
+            "rules": [
+              {
+                "enterpriseSecurityGroupRuleId": "esgr-allow",
+                "direction": "ingress",
+                "ethertype": "IPv4",
+                "protocol": "tcp",
+                "sourceIp": "10.0.0.0/8",
+                "portRange": "443",
+                "action": "allow",
+                "priority": 100
+              },
+              {
+                "enterpriseSecurityGroupRuleId": "esgr-deny",
+                "direction": "ingress",
+                "ethertype": "IPv4",
+                "protocol": "tcp",
+                "sourceIp": "10.0.0.0/8",
+                "portRange": "443",
+                "action": "deny",
+                "priority": 100
+              }
+            ]
+          }
+        ],
+        "acls": [
+          {
+            "vpcId": "vpc-example",
+            "subnetId": "sbn-example",
+            "subnetName": "fixture-subnet",
+            "aclRules": [
+              {
+                "id": "ar-allow-ssh",
+                "direction": "ingress",
+                "protocol": "tcp",
+                "sourceIpAddress": "0.0.0.0/0",
+                "destinationIpAddress": "10.0.1.0/24",
+                "sourcePort": "1-65535",
+                "destinationPort": "22",
+                "position": 100,
+                "action": "allow",
+                "ipVersion": 4
+              },
+              {
+                "id": "ar-deny-ssh",
+                "direction": "ingress",
+                "protocol": "tcp",
+                "sourceIpAddress": "0.0.0.0/0",
+                "destinationIpAddress": "10.0.1.0/24",
+                "sourcePort": "1-65535",
+                "destinationPort": "22",
+                "position": 200,
+                "action": "deny",
+                "ipVersion": 4
+              }
+            ]
+          }
+        ]
+      },
+      "errors": []
+    }
+  }
+}
