@@ -1,0 +1,227 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-09-03T02:00:00Z",
+  "mode": "sample",
+  "flow": {
+    "sourceIp": "10.0.1.10",
+    "destinationIp": "192.168.1.20",
+    "protocol": "tcp",
+    "port": 443
+  },
+  "discoveryRegions": {
+    "bj": {
+      "coverage": {
+        "status": "success",
+        "count": 1,
+        "queries": 1,
+        "failedQueries": 0
+      },
+      "errors": []
+    }
+  },
+  "diagnoses": [
+    {
+      "peerConnection": {
+        "peerConnId": "peerconn-sample",
+        "role": "initiator",
+        "status": "active",
+        "localIfId": "qpif-local",
+        "localVpcId": "vpc-local",
+        "localRegion": "bj",
+        "peerVpcId": "vpc-peer",
+        "peerRegion": "gz"
+      },
+      "remoteOrientation": {
+        "status": "success",
+        "expectedVpcId": "vpc-peer",
+        "returnedVpcId": "vpc-peer"
+      },
+      "endpoints": {
+        "local": {
+          "region": "bj",
+          "vpcId": "vpc-local",
+          "interfaceId": "qpif-local",
+          "resources": {
+            "vpc": {
+              "vpcId": "vpc-local",
+              "cidr": "10.0.0.0/16"
+            },
+            "subnets": [
+              {
+                "subnetId": "sbn-local",
+                "vpcId": "vpc-local",
+                "cidr": "10.0.1.0/24"
+              }
+            ],
+            "routeTables": [
+              {
+                "routeTableId": "rt-local",
+                "vpcId": "vpc-local",
+                "routeRules": [
+                  {
+                    "routeRuleId": "rr-local-peer",
+                    "routeTableId": "rt-local",
+                    "sourceAddress": "10.0.1.0/24",
+                    "destinationAddress": "192.168.1.0/24",
+                    "nexthopType": "peerConn",
+                    "nexthopId": "qpif-local"
+                  }
+                ]
+              }
+            ],
+            "enis": [
+              {
+                "eniId": "eni-local",
+                "vpcId": "vpc-local",
+                "privateIpSet": [
+                  {
+                    "privateIpAddress": "10.0.1.10",
+                    "primary": true
+                  }
+                ],
+                "securityGroupIds": [
+                  "sg-local"
+                ]
+              }
+            ],
+            "securityGroups": [
+              {
+                "id": "sg-local",
+                "vpcId": "vpc-local",
+                "rules": [
+                  {
+                    "securityGroupRuleId": "sgr-local-egress",
+                    "direction": "egress",
+                    "protocol": "tcp",
+                    "portRange": "443",
+                    "destIp": "192.168.1.0/24"
+                  }
+                ]
+              }
+            ],
+            "acls": [
+              {
+                "subnetId": "sbn-local",
+                "aclRules": [
+                  {
+                    "id": "acl-local-egress",
+                    "subnetId": "sbn-local",
+                    "direction": "egress",
+                    "protocol": "tcp",
+                    "sourceIpAddress": "10.0.1.0/24",
+                    "destinationIpAddress": "192.168.1.0/24",
+                    "sourcePort": "1-65535",
+                    "destinationPort": "443",
+                    "position": 10,
+                    "action": "allow"
+                  }
+                ]
+              }
+            ]
+          },
+          "coverage": {
+            "vpc": {"status": "success", "count": 1},
+            "subnets": {"status": "success", "count": 1},
+            "routeTables": {"status": "success", "count": 1},
+            "enis": {"status": "success", "count": 1},
+            "securityGroups": {"status": "success", "count": 1},
+            "acls": {"status": "success", "count": 1}
+          },
+          "errors": []
+        },
+        "peer": {
+          "region": "gz",
+          "vpcId": "vpc-peer",
+          "interfaceId": "qpif-peer",
+          "resources": {
+            "vpc": {
+              "vpcId": "vpc-peer",
+              "cidr": "192.168.0.0/16"
+            },
+            "subnets": [
+              {
+                "subnetId": "sbn-peer",
+                "vpcId": "vpc-peer",
+                "cidr": "192.168.1.0/24"
+              }
+            ],
+            "routeTables": [
+              {
+                "routeTableId": "rt-peer",
+                "vpcId": "vpc-peer",
+                "routeRules": [
+                  {
+                    "routeRuleId": "rr-peer-wrong-interface",
+                    "routeTableId": "rt-peer",
+                    "sourceAddress": "192.168.1.0/24",
+                    "destinationAddress": "10.0.1.0/24",
+                    "nexthopType": "peerConn",
+                    "nexthopId": "qpif-wrong"
+                  }
+                ]
+              }
+            ],
+            "enis": [
+              {
+                "eniId": "eni-peer",
+                "vpcId": "vpc-peer",
+                "privateIpSet": [
+                  {
+                    "privateIpAddress": "192.168.1.20",
+                    "primary": true
+                  }
+                ],
+                "securityGroupIds": [
+                  "sg-peer"
+                ]
+              }
+            ],
+            "securityGroups": [
+              {
+                "id": "sg-peer",
+                "vpcId": "vpc-peer",
+                "rules": [
+                  {
+                    "securityGroupRuleId": "sgr-peer-ingress-ssh",
+                    "direction": "ingress",
+                    "protocol": "tcp",
+                    "portRange": "22",
+                    "sourceIp": "10.0.1.0/24"
+                  }
+                ]
+              }
+            ],
+            "acls": [
+              {
+                "subnetId": "sbn-peer",
+                "aclRules": [
+                  {
+                    "id": "acl-peer-ingress-deny",
+                    "subnetId": "sbn-peer",
+                    "direction": "ingress",
+                    "protocol": "tcp",
+                    "sourceIpAddress": "10.0.1.0/24",
+                    "destinationIpAddress": "192.168.1.0/24",
+                    "sourcePort": "1-65535",
+                    "destinationPort": "443",
+                    "position": 5,
+                    "action": "deny"
+                  }
+                ]
+              }
+            ]
+          },
+          "coverage": {
+            "vpc": {"status": "success", "count": 1},
+            "subnets": {"status": "success", "count": 1},
+            "routeTables": {"status": "success", "count": 1},
+            "enis": {"status": "success", "count": 1},
+            "securityGroups": {"status": "success", "count": 1},
+            "acls": {"status": "success", "count": 1}
+          },
+          "errors": []
+        }
+      }
+    }
+  ]
+}
