@@ -1,0 +1,71 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-09-03T00:00:00Z",
+  "mode": "offline",
+  "endpoint": "offline",
+  "selection": {"requestedCsnIds": [], "unmatchedCsnIds": []},
+  "coverage": {
+    "listCsns": {"status": "success", "count": 2, "queries": 1, "failedQueries": 0},
+    "listInstances": {"status": "success", "successfulCsns": 2, "failedCsns": 0, "queries": 2, "instanceCount": 4},
+    "listRouteTables": {"status": "success", "successfulCsns": 2, "failedCsns": 0, "queries": 2, "routeTableCount": 3},
+    "listAssociations": {"status": "partial", "successfulRouteTables": 2, "failedRouteTables": 1, "queries": 3, "associationCount": 3},
+    "listPropagations": {"status": "success", "successfulRouteTables": 3, "failedRouteTables": 0, "queries": 3, "propagationCount": 2},
+    "listRules": {"status": "success", "successfulRouteTables": 3, "failedRouteTables": 0, "queries": 3, "routeRuleCount": 4}
+  },
+  "csns": [
+    {
+      "csnId": "csn-demo-a",
+      "name": "production-core",
+      "_instancesStatus": "success",
+      "_routeTablesStatus": "success",
+      "instances": [
+        {"attachId": "attach-vpc-a", "instanceType": "vpc", "instanceId": "vpc-a", "instanceName": "app", "instanceRegion": "bj", "status": "attached"},
+        {"attachId": "attach-channel-a", "instanceType": "channel", "instanceId": "channel-a", "instanceName": "idc", "instanceRegion": "bj", "status": "attached"},
+        {"attachId": "attach-vpc-b", "instanceType": "vpc", "instanceId": "vpc-b", "instanceName": "db", "instanceRegion": "gz", "status": "attached"}
+      ],
+      "routeTables": [
+        {
+          "csnRtId": "csnrt-default-a", "name": "default", "type": "default",
+          "_associationsStatus": "success", "_propagationsStatus": "success", "_rulesStatus": "success",
+          "associations": [
+            {"attachId": "attach-vpc-a", "instanceType": "vpc", "instanceId": "vpc-a", "instanceRegion": "bj", "status": "active"},
+            {"attachId": "attach-vpc-a", "instanceType": "vpc", "instanceId": "vpc-a", "instanceRegion": "bj", "status": "active"}
+          ],
+          "propagations": [
+            {"attachId": "attach-vpc-a", "instanceType": "vpc", "instanceId": "vpc-a", "instanceRegion": "bj", "status": "enable"}
+          ],
+          "rules": [
+            {"ruleId": "rule-1", "routeType": "propagated", "csnId": "csn-demo-a", "csnRtId": "csnrt-default-a", "fromAttachId": "attach-vpc-a", "status": "active", "destAddress": "10.0.0.0/16", "nextHopId": "vpc-a", "nextHopRegion": "bj", "nextHopType": "vpc", "blackHole": false},
+            {"ruleId": "rule-2", "routeType": "propagated", "csnId": "csn-demo-a", "csnRtId": "csnrt-default-a", "fromAttachId": "attach-vpc-b", "status": "conflicted", "destAddress": "10.0.0.0/16", "nextHopId": "vpc-b", "nextHopRegion": "gz", "nextHopType": "vpc", "blackHole": false}
+          ]
+        },
+        {
+          "csnRtId": "csnrt-custom-a", "name": "isolated", "type": "custom",
+          "_associationsStatus": "failed", "_propagationsStatus": "success", "_rulesStatus": "success",
+          "associations": [],
+          "propagations": [
+            {"attachId": "attach-vpc-b", "instanceType": "vpc", "instanceId": "vpc-b", "instanceRegion": "gz", "status": "enable"}
+          ],
+          "rules": [
+            {"ruleId": "rule-3", "routeType": "custom", "csnId": "csn-demo-a", "csnRtId": "csnrt-custom-a", "status": "active", "destAddress": "0.0.0.0/0", "nextHopId": "vpc-b", "nextHopRegion": "gz", "nextHopType": "vpc", "blackHole": true}
+          ]
+        }
+      ]
+    },
+    {
+      "csnId": "csn-demo-b", "name": "staging-core",
+      "_instancesStatus": "success", "_routeTablesStatus": "success",
+      "instances": [{"attachId": "attach-vpc-c", "instanceType": "vpc", "instanceId": "vpc-c", "instanceName": "stage", "instanceRegion": "bj", "status": "attached"}],
+      "routeTables": [{
+        "csnRtId": "csnrt-custom-b", "name": "unused", "type": "custom",
+        "_associationsStatus": "success", "_propagationsStatus": "success", "_rulesStatus": "success",
+        "associations": [{"attachId": "attach-orphan", "instanceType": "vpc", "instanceId": "vpc-missing", "instanceRegion": "bj", "status": "active"}],
+        "propagations": [],
+        "rules": [{"ruleId": "rule-4", "routeType": "custom", "csnId": "csn-wrong", "csnRtId": "csnrt-custom-b", "status": "active", "destAddress": "not-a-cidr", "nextHopId": "", "blackHole": false}]
+      }]
+    }
+  ],
+  "errors": [
+    {"operation": "listAssociations", "scope": "csnrt-custom-a", "parentCsnId": "csn-demo-a", "status": 403, "code": "AccessDenied", "path": "/v1/csn/routeTable/csnrt-custom-a/association"}
+  ]
+}
