@@ -1,19 +1,19 @@
 ---
 name: baiducloud-vm-diagnosis
-description: Diagnose Linux virtual machine performance, stability, and OS health issues from inside the guest. Use when troubleshooting high memory usage or OOM, Java/JVM memory, socket or TCP memory pressure, packet loss, network jitter, disk IO saturation or slow IO, high load, CPU scheduling delay, filesystem or fstab problems, fd exhaustion, hugepage pressure, SSH/cloud-init/NTP health, or when building a SysOM-like VM diagnosis workflow. Produces structured agent envelopes and does not apply fixes automatically.
+description: 从虚机内部诊断 Linux 虚拟机的性能、稳定性与操作系统健康问题。适用于排查内存占用过高或 OOM、Java/JVM 内存、socket 或 TCP 内存压力、丢包、网络抖动、磁盘 IO 打满或 IO 缓慢、负载过高、CPU 调度延迟、文件系统或 fstab 异常、fd 耗尽、大页内存压力、SSH/cloud-init/NTP 健康状况，以及需要搭建类似 SysOM 的虚机诊断流程等场景。输出结构化的 agent envelope，不会自动执行修复操作。
 ---
 
-# VM Diagnosis
+# 虚机诊断
 
-## Overview
+## 概述
 
-Use the bundled read-only collector as the first diagnostic source for Linux VM symptoms. It emits a SysOM-style JSON envelope with `ok`, `command`, `agent.summary`, `agent.findings[]`, and `agent.next_steps[]`.
+排查 Linux 虚机症状时，优先使用本 skill 内置的只读采集器作为第一诊断来源。它会输出 SysOM 风格的 JSON envelope，包含 `ok`、`command`、`agent.summary`、`agent.findings[]` 和 `agent.next_steps[]` 字段。
 
-The script is designed for the target Linux guest. If the current machine is not the VM being diagnosed, copy or run `scripts/vm_diagnose.py` on the target through the available remote shell, SSH, or devbox path; do not interpret the local macOS host as the target.
+该脚本面向被诊断的目标 Linux 虚机设计。如果当前机器不是待诊断的虚机，请通过可用的远程 shell、SSH 或 devbox 通道，把 `scripts/vm_diagnose.py` 拷贝到目标机上执行；不要把本地 macOS 主机误当作目标机。
 
-## Quick Route
+## 快速选路
 
-Run the smallest command that matches the user's symptom:
+按用户描述的症状，选择最小可用的命令执行：
 
 ```bash
 python3 scripts/vm_diagnose.py classify
@@ -25,21 +25,21 @@ python3 scripts/vm_diagnose.py load --interval 2
 python3 scripts/vm_diagnose.py health
 ```
 
-Use `classify` when the symptom is vague, cross-domain, or just "slow/stuck/unstable". Use a focused command when the user already names memory, Java, network, IO, or load.
+当症状描述模糊、跨多个领域，或用户只说"慢/卡住/不稳定"时，使用 `classify`。当用户已明确指出内存、Java、网络、IO 或负载问题时，直接使用对应的专项命令。
 
-## Workflow
+## 工作流程
 
-1. Classify the symptom into memory, Java memory, network, IO, load/scheduling, or OS health.
-2. Run the matching collector command on the Linux guest.
-3. Read only the envelope fields by default: `ok`, `error`, `command`, and `agent`.
-4. Answer from `agent.summary`, `agent.findings[].detail/category`, and `agent.next_steps[]`.
-5. Run one focused follow-up only when a required entity is missing and the envelope recommends a command that can fill it.
+1. 将症状归类到内存、Java 内存、网络、IO、负载/调度或操作系统健康这几类中。
+2. 在目标 Linux 虚机上执行匹配的采集命令。
+3. 默认只读取 envelope 中的这几个字段：`ok`、`error`、`command` 和 `agent`。
+4. 依据 `agent.summary`、`agent.findings[].detail/category` 和 `agent.next_steps[]` 作答。
+5. 只有当关键实体信息缺失、且 envelope 推荐了能补齐该信息的命令时，才追加执行一次专项命令。
 
-Do not run remediation during diagnosis. Avoid commands that kill processes, clear cache, write sysctl values, edit cgroups, change fstab, restart services, or modify network state unless the user explicitly asks for repair after seeing the diagnosis.
+诊断过程中不要执行修复操作。除非用户在看到诊断结果后明确要求修复，否则应避免执行杀进程、清理缓存、写入 sysctl 参数、修改 cgroup、变更 fstab、重启服务或改动网络状态等命令。
 
-## Output Contract
+## 输出约定
 
-Treat `agent` as the source of truth for the user-facing answer:
+面向用户的回答应以 `agent` 字段为准：
 
 ```json
 {
@@ -68,9 +68,9 @@ Treat `agent` as the source of truth for the user-facing answer:
 }
 ```
 
-A finding is complete enough to answer when it names the material object, owner or scope, evidence, and safe action target. Examples: PID/service/cgroup for memory, interface/path or flow scope for network, block device and latency for IO, runnable/blocked task pressure for load, Java PID and heap/RSS context for JVM symptoms.
+一条 finding 需要同时给出问题对象、归属方或作用范围、证据，以及安全的处置目标，才算信息完整、可用于作答。例如：内存问题需给出 PID/服务/cgroup，网络问题需给出网卡/路径或流量范围，IO 问题需给出块设备与时延，负载问题需给出 runnable/blocked 任务压力，JVM 类症状需给出 Java PID 与堆内存/RSS 上下文。
 
-## References
+## 参考文档
 
-- Read `references/domain-routing.md` when choosing follow-up commands or checking whether an answer is complete.
-- Read `references/gpu-rdma-resources.md` when the VM has GPU/RDMA symptoms or when reusing an optional GPU/RDMA diagnostic toolchain.
+- 需要选择后续排查命令，或判断当前结论是否完整时，阅读 `references/domain-routing.md`。
+- 虚机出现 GPU/RDMA 相关症状，或需要复用可选的 GPU/RDMA 诊断工具链时，阅读 `references/gpu-rdma-resources.md`。
