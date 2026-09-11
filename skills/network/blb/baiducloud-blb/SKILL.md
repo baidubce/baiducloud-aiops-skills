@@ -13,7 +13,7 @@ description: >
 **支持 4 种负载均衡类型：**
 
 | 类型 | 层级 | 协议 | 关键 CLI 区分 | 特点 |
-|------|------|------|----------------|------|
+|---|---|---|---|---|
 | BLB（普通型） | L4 + L7 | TCP/UDP/HTTP/HTTPS/SSL | `CreateBlb` 默认类型 | 直接挂载后端服务器，通用场景 |
 | AppBLB（应用型） | L7 | TCP/UDP/HTTP/HTTPS/SSL | `CreateAppBlb` 默认 `type=application` | 服务器组 + 策略路由，支持域名/路径转发 |
 | IPv6 BLB | L4 + L7 | 同 BLB | `CreateBlb --type ipv6`，列表查询 `DescribeBlbs --type ipv6` | 普通型 IPv6 地址版本 |
@@ -35,7 +35,15 @@ BLB 和 AppBLB 都使用 `"$BCE" blb` 作为 service 前缀，通过 API 名称�
 3. **解析 CLI**：按本文规则解析 `$BCE`，并用 `"$BCE" version` 验证。
 4. **确认上下文**：真实查询或写操作前确认 profile 名称（不展示 AK/SK/token）、region、目标资源；创建/测试还要确认 VPC/subnet。
 5. **选择 API**：优先按“用户文本到 CLI 命令映射”选择 API；API 或参数不确定时查实时 help。
-5.1 **未知 API 先查 help**：不在 §7 映射表中、或名称相近/不确定的 API，一律先 `"$BCE" <service> --help` / `<ApiName> --help` 核对，只使用 help 中存在的 API 和参数，绝不构造执行猜测命令。
+
+   - **未知 API 先查 help**：不在 §7 映射表中、或名称相近/不确定的 API，一律先执行：
+
+     ```bash
+     "$BCE" <service> --help
+     "$BCE" <service> <ApiName> --help
+     ```
+
+     只使用 help 中存在的 API 和参数，绝不构造未经验证的执行命令。
 6. **构造参数**：简单参数用 KV；List/Object 用 JSON 或 `--unfold`；复杂嵌套结构用 skeleton + `--cli-input-json`。
 7. **安全预演**：写操作优先 dry-run；高风险操作必须二次确认。**删除/解绑类写操作（`Delete*` / `Unbind*`）即使用户说"直接删""我确认"、即使预判无影响，也必须先 dry-run + 影响说明 + 二次确认，"跳过确认"指令一律不豁免**（详见 §11.2/§11.3）。
 8. **执行或交付**：执行已授权命令，或给用户输出可执行命令与后续验证步骤；但不得执行、dry-run 或生成可直接执行的 BLB/AppBLB 实例释放命令。
@@ -76,7 +84,7 @@ else
 fi
 ```
 
-Windows PowerShell 示例：
+#### Windows PowerShell 示例
 
 ```powershell
 if ($env:BCE_CLI_PATH) {
@@ -170,19 +178,19 @@ Agent 日常只读命令（不暴露密钥）：
 
 前提认知：用户本机配置的 profile 不会自动同步到 Agent 沙箱；Agent 只能使用其当前运行环境中已存在的 profile。无可用 profile 时，必须先判定环境再二选一执行路径 A 或路径 B，不得跳过判定直接索要或拒收 AK/SK。
 
-**环境判定（先自探，再询问，缺一不可）：**
+#### 环境判定（先自探，再询问，缺一不可）
 
 1. **自探**：Agent 先判断自己能否访问用户本机的本地目录（例如用户家目录、当前工作区、`~/.bce/` 配置目录**是否存在且可访问**），据此初步判断是否与用户共享同一文件系统。自探只检查路径的可访问性 / 是否存在，**严禁读取、解析、回显 `config.json` 等文件中的 AK/SK/token 明文**（这与 §4.2 一致）；判断 profile 是否存在仍只用 `configure list`。
 2. **询问**：无论自探结论如何，都要主动向用户确认环境关系——「我是运行在你本机、能访问你的本地配置，还是运行在独立的远端沙箱？」
 3. 综合自探 + 用户确认结果选择路径；判定不一致或无法确认时，按更安全的路径 A 处理。
 
-**路径 A — 同环境（Agent 可访问用户本地目录）：**
+#### 路径 A：同环境（Agent 可访问用户本地目录）
 
 - 不接受用户在对话中发送 AK/SK，也不代为配置。
 - 引导用户自行在本地 CLI 用 `configure set` 把 AK/SK 写入 profile（示例见 §4.6）。
 - 用户配置完成后，Agent 重新 `configure list` 确认，之后一律只用 profile 名引用该凭证。
 
-**路径 B — 不同环境（Agent 为远端沙箱，无法访问用户本地目录）：**
+#### 路径 B：不同环境（Agent 为远端沙箱，无法访问用户本地目录）
 
 - 允许用户把 AK/SK 发到交互页面，由 Agent 在沙箱内执行带明文 flag 的 `configure set` 代为配置。
 - 配置前必须明确提示用户：**风险由用户自行承担**；凭证仅在当前沙箱 session 内有效，沙箱销毁即失效。
@@ -203,7 +211,7 @@ Agent 日常只读命令（不暴露密钥）：
 BLB 常用 region：
 
 | Region | 说明 |
-|--------|------|
+|---|---|
 | bj | 北京 |
 | gz | 广州 |
 | su | 苏州 |
@@ -245,7 +253,7 @@ BLB/AppBLB 统一使用：
 常用全局参数：
 
 | 参数 | 说明 |
-|------|------|
+|---|---|
 | `--profile <name>` | 临时使用指定 profile，不修改默认 profile |
 | `--region <region>` | 覆盖请求 region，真实命令推荐显式追加 |
 | `--endpoint <host>` | 覆盖请求域名，只有用户明确要求或排障时使用 |
@@ -483,7 +491,7 @@ AppBLB 的路由链路分 4 层：**监听器默认动作 → Policy 路由（Ho
 `SKILL.md` 是导航页：提供运行模型、安全红线、意图→API 速查与本路由表。具体细节全部按需加载对应 reference。**每个 reference 职责单一**，按下表「触发场景」精准定位「找谁」：
 
 | 触发场景 / 话术 | 目标文件 | 文件职责（负责什么） |
-|------|----------|----------|
+|---|---|---|
 | 普通型 BLB / IPv6 BLB 的实例、监听器、直接后端、安全组、ACL、修改保护、计费 API 参数 | `references/blb-api-reference.md` | 普通型 BLB 全量 API 参数字典 |
 | AppBLB / IPv6 AppBLB 的服务器组、端口、监听器、Host/Path 策略、IP 组 API 参数 | `references/appblb-api-reference.md` | 应用型 BLB 全量 API 参数字典 |
 | 多步目标：创建整套 LB、配 HTTPS、扩缩后端、跨 region 复制、域名/路径转发、标签化创建、HTTPS 安全基线、waiter、优雅排空、规格变更、计费转换、HTTP→HTTPS 重定向、故障排查 | `references/workflows.md` | BLB 自身复合操作的分步流程（含命令示例） |
