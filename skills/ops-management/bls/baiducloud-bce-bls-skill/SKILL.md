@@ -1,23 +1,23 @@
 ---
 name: baiducloud-bce-bls-skill
-description: Install and verify the official Baidu Cloud Log Service (BLS) AI Agent skill (`bce-bls`) from the BLS documentation or packaged zip. Use when the user asks to install, update, download, configure, or troubleshoot the BLS installer skill, `bce-bls-skill` or legacy `bls-skill`, `bce-bls.zip`, OpenCode/OpenClaw skill installation, or natural-language querying of Baidu Cloud Log Service through an AI agent.
+description: 从 BLS 官方文档或打包好的 zip 安装并验证百度智能云日志服务（BLS）官方 AI Agent skill（`bce-bls`）。适用于用户需要安装、更新、下载、配置或排查 BLS 安装器 skill（`bce-bls-skill` 或旧名 `bls-skill`）、`bce-bls.zip`、OpenCode/OpenClaw skill 安装，以及通过 AI agent 用自然语言查询百度智能云日志服务等场景。
 ---
 
-# BCE BLS Skill Installer
+# BCE BLS Skill 安装器
 
-Use this skill to install the official Baidu Cloud Log Service (BLS) AI Agent skill into an agent's `skills` directory. The installed runtime skill is named `bce-bls`; this `bce-bls-skill` is only the installer and verification guide. Prefer the bundled `assets/bce-bls.zip` package so installation does not depend on reaching Baidu-hosted download URLs.
+使用本 skill 可将百度智能云日志服务（BLS）官方 AI Agent skill 安装到目标 agent 的 `skills` 目录。安装后的运行时 skill 名为 `bce-bls`；本 `bce-bls-skill` 仅是安装器和验证指南。建议优先使用内置的 `assets/bce-bls.zip` 安装包，这样安装过程不依赖能否访问百度侧的下载地址。
 
-Official references:
+官方参考资料：
 
-- BLS AI Agent guide: https://cloud.baidu.com/doc/BLS/s/Omnr306y5
-- BLS skill zip: https://bls-skill.bj.bcebos.com/latest/bce-bls.zip
-- Bundled package: `assets/bce-bls.zip`
+- BLS AI Agent 指南：https://cloud.baidu.com/doc/BLS/s/Omnr306y5
+- BLS skill zip 包：https://bls-skill.bj.bcebos.com/latest/bce-bls.zip
+- 内置安装包：`assets/bce-bls.zip`
 
-## Workflow
+## 工作流程
 
-### 1. Pick The Target Skills Directory
+### 1. 确定目标 skills 目录
 
-Infer the target from the agent the user is using:
+根据用户正在使用的 agent 推断目标目录：
 
 ```text
 OpenCode: ~/.config/opencode/skills
@@ -27,37 +27,37 @@ Codex: ~/.codex/skills or $CODEX_HOME/skills
 Other agents: the agent's documented skills directory
 ```
 
-If the target cannot be inferred, ask for it. Do not install into the current repository unless the user explicitly wants a repository copy.
+如果无法推断出目标目录，直接询问用户。除非用户明确希望在代码仓库中保留一份副本，否则不要安装到当前代码仓库中。
 
-### 2. Prefer Native Package Installation When Available
+### 2. 优先使用原生包安装方式
 
-For OpenClaw, the official document says users can install this installer skill directly with:
+对于 OpenClaw，官方文档说明用户可以直接用以下命令安装本安装器 skill：
 
 ```bash
 openclaw skills install bce-bls-skill
 ```
 
-For portable installs, use the bundled installer script. It installs from `assets/bce-bls.zip` when present and only falls back to the official URL if the bundled package is missing:
+如需可移植的安装方式，请使用内置的安装脚本。该脚本在 `assets/bce-bls.zip` 存在时优先从内置包安装，只有内置包缺失时才回退到官方下载地址：
 
 ```bash
 bash scripts/install-bce-bls-skill.sh "<target-skills-dir>"
 ```
 
-To install from a different local zip:
+从其他本地 zip 包安装：
 
 ```bash
 BCE_BLS_SKILL_ZIP="/path/to/bce-bls.zip" bash scripts/install-bce-bls-skill.sh "<target-skills-dir>"
 ```
 
-To force a remote update from the official package or a mirror:
+强制从官方包或镜像源做远程更新：
 
 ```bash
 BCE_BLS_SKILL_URL="https://bls-skill.bj.bcebos.com/latest/bce-bls.zip" bash scripts/install-bce-bls-skill.sh "<target-skills-dir>"
 ```
 
-### 3. Verify Installation
+### 3. 验证安装结果
 
-Check that the installed skill directory and frontmatter are present:
+检查安装后的 skill 目录和 frontmatter 是否存在：
 
 ```bash
 test -f "<target-skills-dir>/bce-bls/SKILL.md"
@@ -65,20 +65,20 @@ sed -n '1,40p' "<target-skills-dir>/bce-bls/SKILL.md"
 find "<target-skills-dir>/bce-bls" -maxdepth 3 -type f | sort
 ```
 
-If the agent has a skill-list command, run it and confirm `bce-bls` appears. If it does not appear, restart or reload the agent so it rescans the skills directory.
+如果目标 agent 提供了 skill 列表命令，执行该命令并确认 `bce-bls` 已出现在列表中。若未出现，请重启或重新加载 agent，让它重新扫描 skills 目录。
 
-### 4. Configure BLS Credentials Safely
+### 4. 安全地配置 BLS 凭据
 
-The official BLS skill needs Baidu Cloud AK/SK with read permission for the target log resources. Avoid asking the user to paste long-lived AK/SK in chat.
+BLS 官方 skill 需要具备目标日志资源读权限的百度智能云 AK/SK。请避免让用户在对话中直接粘贴长期有效的 AK/SK。
 
-Prefer environment variables:
+推荐使用环境变量：
 
 ```bash
 export BCE_BLS_ACCESS_KEY="<ak>"
 export BCE_BLS_SECRET_KEY="<sk>"
 ```
 
-Or use the credentials file:
+也可以使用凭据文件：
 
 ```text
 ~/.bce_bls/credentials
@@ -94,26 +94,26 @@ bce_access_key_id = PRODUCTION_AK
 bce_secret_access_key = PRODUCTION_SK
 ```
 
-Use `BCE_BLS_PROFILE` to switch profiles:
+通过 `BCE_BLS_PROFILE` 切换 profile：
 
 ```bash
 export BCE_BLS_PROFILE=prod
 ```
 
-### 5. Smoke Test
+### 5. 冒烟测试
 
-Ask the target agent to use `bce-bls`, for example:
+让目标 agent 调用 `bce-bls`，例如：
 
 ```text
 Use bce-bls to list my BLS projects in region bj.
 ```
 
-BLS is region-scoped. If the user does not provide a region, ask for one before attempting queries.
+BLS 是按地域隔离的。如果用户没有提供地域，先询问地域再发起查询。
 
-## Notes
+## 注意事项
 
-- The official zip installs a skill named `bce-bls`; do not rename it after extraction unless the target agent requires a different naming convention.
-- The target machine needs `python3`; the official document lists it as a prerequisite.
-- If `unzip` is missing, install it with the target system package manager or use Python's `zipfile` module as a fallback.
-- The installer also accepts the legacy `BLS_SKILL_ZIP` and `BLS_SKILL_URL` aliases.
-- Refresh `assets/bce-bls.zip` when the official BLS skill changes; the bundled copy favors portability over always getting the latest remote package.
+- 官方 zip 包安装的 skill 名为 `bce-bls`；除非目标 agent 要求不同的命名规范，解压后不要重命名。
+- 目标机器需要有 `python3`；官方文档将其列为前置依赖。
+- 如果缺少 `unzip`，请用目标系统的包管理器安装，或改用 Python 的 `zipfile` 模块作为替代方案。
+- 安装脚本同时兼容旧的 `BLS_SKILL_ZIP` 和 `BLS_SKILL_URL` 别名。
+- 官方 BLS skill 更新时，记得同步刷新 `assets/bce-bls.zip`；内置副本优先保证可移植性，而非始终获取最新的远端包。
