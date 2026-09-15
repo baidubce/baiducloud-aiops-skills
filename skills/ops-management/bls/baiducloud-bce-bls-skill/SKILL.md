@@ -1,6 +1,6 @@
 ---
 name: baiducloud-bce-bls-skill
-description: 从 BLS 官方文档或打包好的 zip 安装并验证百度智能云日志服务（BLS）官方 AI Agent skill（`bce-bls`）。适用于用户需要安装、更新、下载、配置或排查 BLS 安装器 skill（`bce-bls-skill` 或旧名 `bls-skill`）、`bce-bls.zip`、OpenCode/OpenClaw skill 安装，以及通过 AI agent 用自然语言查询百度智能云日志服务等场景。
+description: 从 BLS 官方文档或打包好的 zip 安装并验证百度智能云日志服务（BLS）官方 AI Agent skill（bce-bls）。适用于用户需要安装、更新、下载、配置或排查 BLS 安装器 skill（bce-bls-skill 或旧名 bls-skill），以及通过 AI agent 用自然语言查询百度智能云日志服务等场景。
 ---
 
 # BCE BLS Skill 安装器
