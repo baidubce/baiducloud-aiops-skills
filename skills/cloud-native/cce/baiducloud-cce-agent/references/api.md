@@ -26,7 +26,7 @@ Authorization: bce-auth-v1/<AK>/<UTC 时间戳>/<有效期秒>/host/<签名>
 写到域名即可：
 
 ```
-https://cce.su.baidubce.com
+https://cce-agent.su.baidubce.com
 ```
 
 规则是：网关对外暴露的路径必须与后端路径**逐字相同**。服务端会把收到的 path / query / host

@@ -34,12 +34,21 @@ CProm 指标等），因此**不要自己猜测或编造云上事实** —— �
    **只经环境变量传入**，不要写进文件、不要落进对话记录、不要提交到任何仓库。会话归属
    账号由签名反查得到，不需要显式传账号 ID。凭证需要的最小 RAM 权限见
    `references/ram-policies.md`。
-2. **CLI 可执行文件**：**本 skill 不分发二进制**。先按 `references/usage.md`「获取 CLI」
-   拿到当前平台的 `cce-agent`（静态编译，无 Node / Python / glibc 依赖），再用
-   `scripts/cce-agent-env.sh` 解析出它的路径：脚本依次查 `CCE_AGENT_BIN`、`PATH` 上的
-   `cce-agent`、`$CCE_AGENT_HOME`、`~/.local/bin`、`~/.cce-agent/bin`，找不到会打印获取指引
-   并以非 0 退出。
-3. **服务地址**：可选。默认已内置 `https://cce.su.baidubce.com`，开箱即用；需要改用
+2. **CLI 可执行文件**：**本 skill 不分发二进制**（上传规范不允许），二进制单独从 BOS 取，
+   静态编译、无 Node / Python / glibc 依赖。用户机器上还没有时，把下面三行交给用户执行：
+
+   ```bash
+   curl -fL -o /tmp/cce-agent-bin.zip https://cce-agent.bj.bcebos.com/bins/bin.zip
+   unzip -o /tmp/cce-agent-bin.zip -d ~/.cce-agent -x '__MACOSX/*'
+   chmod +x ~/.cce-agent/bin/cce-agent-*
+   ```
+
+   装到 `~/.cce-agent/bin` 正好是解析脚本的默认搜索位置，装完无需配环境变量。之后用
+   `scripts/cce-agent-env.sh` 解析路径：脚本依次查 `CCE_AGENT_BIN`、`PATH` 上的
+   `cce-agent`、`$CCE_AGENT_HOME`、`~/.local/bin`、`~/.cce-agent/bin`，找不到会打印上面的
+   安装指引并以非 0 退出。**这是一次外网下载并落地可执行文件的操作，要让用户知情后再做，
+   不要静默执行**；平台矩阵与其它装法见 `references/usage.md`「一、获取 CLI」。
+3. **服务地址**：可选。默认已内置 `https://cce-agent.su.baidubce.com`，开箱即用；需要改用
    其他入口时设 `CCE_AGENT_ENDPOINT`，写到网关注册的路径为止（当前公网入口无额外前缀，
    写到域名即可）。**不要自己拼版本前缀**，网关对外路径必须与后端路径逐字相同，多写一段会 404。
 
@@ -111,7 +120,7 @@ $CCE release <sessionId>
 - **回答（含流式增量）走 stdout**，会话 ID、工具调用提示、重试与错误走 stderr，
   因此 `$CCE chat "…" > answer.txt` 拿到的就是干净的答案。
 - `--json` 时 stdout 只有一个 JSON 对象（`sessionId` / `runId` / `status` /
-  `answer` / `tools` / `events` / `error`），stderr 保持安静。
+  `answer` / `thinking` / `tools` / `events`，失败时另有 `error`），stderr 保持安静。
 - `--think` 额外显示思考流与工具明细（stderr），`--raw` 原样打印每帧事件，二者都用于排障。
 - 退出码：执行成功为 0；`status` 不是 `succeeded`（含 `failed` / `timeout`）为非 0。
 

@@ -38,7 +38,11 @@ for dir in "${CCE_AGENT_HOME:-}" "$HOME/.local/bin" "$HOME/.cce-agent/bin"; do
 done
 
 die "未找到 cce-agent CLI（当前平台：${os}-${arch}）。" \
-    "本 Skill 不分发二进制，请先获取对应平台的可执行文件（见 references/usage.md「一、获取 CLI」），" \
-    "然后任选一种方式让它可被发现：" \
+    "本 Skill 不分发二进制，请先安装（一次外网下载，请知情后执行）：" \
+    "  curl -fL -o /tmp/cce-agent-bin.zip https://cce-agent.bj.bcebos.com/bins/bin.zip" \
+    "  unzip -o /tmp/cce-agent-bin.zip -d \$HOME/.cce-agent -x '__MACOSX/*'" \
+    "  chmod +x \$HOME/.cce-agent/bin/cce-agent-*" \
+    "装到 ~/.cce-agent/bin 后本脚本即可自动发现；也可任选：" \
     "  1) export CCE_AGENT_BIN=/absolute/path/to/cce-agent-${os}-${arch}" \
-    "  2) 放到 PATH 上并命名为 cce-agent，例如 install -m 755 cce-agent-${os}-${arch} ~/.local/bin/cce-agent"
+    "  2) 放到 PATH 上并命名为 cce-agent，例如 install -m 755 cce-agent-${os}-${arch} ~/.local/bin/cce-agent" \
+    "详见 references/usage.md「一、获取 CLI」。"

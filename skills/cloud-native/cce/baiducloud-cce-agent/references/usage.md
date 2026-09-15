@@ -7,7 +7,7 @@
 
 ## 一、获取 CLI
 
-本 Skill 包**不含二进制**，只提供说明与解析脚本。先自行获取当前平台的可执行文件：
+本 Skill 包**不含二进制**（上传规范不允许），二进制单独从 BOS 获取。各平台产物：
 
 | 平台 | 构建产物名 |
 | --- | --- |
@@ -17,16 +17,26 @@
 | macOS Apple Silicon | `cce-agent-darwin-arm64` |
 | Windows x86_64 | `cce-agent-windows-amd64.exe` |
 
-获取途径：向 CCE Agent 服务方索取对应平台的构建产物，或从服务方提供的制品库/下载地址
-获取（`<在此填入你所在环境的下载地址>`）。
-
-拿到后任选一种方式安装，让 Skill 能发现它：
+推荐装法：解压到 `~/.cce-agent`，解析脚本默认就会去 `~/.cce-agent/bin` 找，装完不用配环境变量。
 
 ```bash
-# 方式 1：装到 PATH（推荐）
-install -m 755 cce-agent-linux-amd64 ~/.local/bin/cce-agent
+curl -fL -o /tmp/cce-agent-bin.zip https://cce-agent.bj.bcebos.com/bins/bin.zip
+unzip -o /tmp/cce-agent-bin.zip -d ~/.cce-agent -x '__MACOSX/*'
+chmod +x ~/.cce-agent/bin/cce-agent-*
+rm -f /tmp/cce-agent-bin.zip
+# 得到 ~/.cce-agent/bin/cce-agent-<os>-<arch>，五个平台各一份，按需只留自己那份
+```
 
-# 方式 2：留在原地，用环境变量指路
+zip 内层目录就是 `bin/`，所以解压到 `~/.cce-agent` 后路径是 `~/.cce-agent/bin/...`；
+解压时排除 `__MACOSX/*`（macOS 打包残留，留着无害但没用）。
+
+其它两种装法也可以：
+
+```bash
+# 装到 PATH，命名为 cce-agent
+install -m 755 ~/.cce-agent/bin/cce-agent-linux-amd64 ~/.local/bin/cce-agent
+
+# 或留在任意位置，用环境变量指路
 export CCE_AGENT_BIN=/abs/path/to/cce-agent-linux-amd64
 chmod +x "$CCE_AGENT_BIN"
 ```
@@ -39,13 +49,15 @@ export CCE="$(bash scripts/cce-agent-env.sh)"
 $CCE version
 ```
 
+Windows 用户请直接用 `cce-agent-windows-amd64.exe`，或在 WSL 里按 Linux 产物安装。
+
 ## 二、配置
 
 ```bash
 export BCE_AK=<你的 AccessKey>          # 也接受 BAIDU_AK
 export BCE_SK=<你的 SecretKey>          # 也接受 BAIDU_SK
-# 服务地址已内置 https://cce.su.baidubce.com，一般不用设
-# export CCE_AGENT_ENDPOINT=https://cce.su.baidubce.com
+# 服务地址已内置 https://cce-agent.su.baidubce.com，一般不用设
+# export CCE_AGENT_ENDPOINT=https://cce-agent.su.baidubce.com
 ```
 
 凭证只经环境变量传入，不要写进脚本或提交到仓库。会话归属哪个账号由签名反查得出，
@@ -55,7 +67,7 @@ export BCE_SK=<你的 SecretKey>          # 也接受 BAIDU_SK
 
 ```bash
 $CCE check
-# 连通正常：endpoint=https://cce.su.baidubce.com product=cce 凭证有效（可见会话 N 个）
+# 连通正常：endpoint=https://cce-agent.su.baidubce.com product=cce 凭证有效（可见会话 N 个）
 ```
 
 ## 三、提问
@@ -67,7 +79,7 @@ $CCE chat "列出我账号下的 CCE 集群，给出名称、状态和节点数"
 回答边生成边打到 stdout；会话 ID 与工具调用提示打到 stderr：
 
 ```
-[session: sess-69945e01-01cb-4d87-9946-28129446999e]
+[session: sess-00000000-0000-0000-0000-000000000000]
 
   · 正在调用 cloud_tool_search …
   · 正在调用 cce_v2_list_clusters …
@@ -76,9 +88,9 @@ $CCE chat "列出我账号下的 CCE 集群，给出名称、状态和节点数"
 多轮对话必须复用同一个会话，否则上下文会丢：
 
 ```bash
-$CCE send sess-69945e01-01cb-4d87-9946-28129446999e "刚才那些集群里有节点 NotReady 的吗？"
+$CCE send sess-00000000-0000-0000-0000-000000000000 "刚才那些集群里有节点 NotReady 的吗？"
 # 等价写法
-$CCE chat "…" --session sess-69945e01-01cb-4d87-9946-28129446999e
+$CCE chat "…" --session sess-00000000-0000-0000-0000-000000000000
 ```
 
 也可以先建会话再用：
@@ -176,10 +188,13 @@ $CCE chat "对比北京和广州的集群数量"
   "runId": "run-…",
   "status": "succeeded",
   "answer": "…",
+  "thinking": "…",
   "tools": ["cce_v2_list_clusters"],
   "events": 71
 }
 ```
+
+失败时多一个 `error` 字段（含服务端错误信息）。`thinking` 是本轮思考流，不需要时忽略即可。
 
 退出码：成功 0；`status` 不是 `succeeded`（`failed` / `timeout`）为非 0。
 
@@ -196,7 +211,7 @@ $CCE chat "对比北京和广州的集群数量"
 
 | 现象 | 原因与处理 |
 | --- | --- |
-| `未找到 cce-agent CLI` | 还没获取二进制，或没设 `CCE_AGENT_BIN` / 没放到 PATH，见「一、获取 CLI」 |
+| `未找到 cce-agent CLI` | 二进制还没装，或没设 `CCE_AGENT_BIN` / 没放到 PATH，按「一、获取 CLI」从 BOS 装到 `~/.cce-agent` |
 | `需要环境变量 BCE_AK / BCE_SK` | 凭证没导出，或在新 shell 里丢了 |
 | `401 InvalidAuth` / `IamSignatureInvalid` | AK/SK 不对、系统时间偏差过大，或该 AK 有 IP 白名单限制 |
 | `403` + `request ip not allowed` | AK 绑定了 IP 白名单，把当前出口 IP 加进去 |
@@ -211,7 +226,8 @@ $CCE chat "对比北京和广州的集群数量"
 ## 九、卸载
 
 ```bash
-rm -f ~/.local/bin/cce-agent        # 或删掉你自己放二进制的位置
+rm -rf ~/.cce-agent                 # BOS 包的默认安装位置
+rm -f ~/.local/bin/cce-agent        # 若装到了 PATH
 unset CCE CCE_AGENT_BIN BCE_AK BCE_SK CCE_AGENT_ENDPOINT
 ```
 
