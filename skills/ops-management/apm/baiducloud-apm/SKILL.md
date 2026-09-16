@@ -1,6 +1,6 @@
 ---
 name: baiducloud-apm
-description: Use when users need to diagnose Baidu Cloud APM applications or LLM workloads, query traces and runtime metrics, or safely manage APM/LLM alarm policies through the BCE CLI. Do not use for BCM V3 cloud-product metrics or alarms.
+description: 用于通过 BCE CLI 诊断百度智能云 APM 应用或 LLM 工作负载、查询 Trace 与运行时指标，以及安全管理 APM/LLM 报警策略；不用于 BCM V3 云产品指标或报警。
 ---
 
 # Baidu Cloud Application Performance Monitoring
