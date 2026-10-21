@@ -3,88 +3,88 @@ name: baiducloud-apm
 description: 用于通过 BCE CLI 诊断百度智能云 APM 应用或 LLM 工作负载、查询 Trace 与运行时指标，以及安全管理 APM/LLM 报警策略；不用于 BCM V3 云产品指标或报警。
 ---
 
-# Baidu Cloud Application Performance Monitoring
+# 百度智能云应用性能监控
 
-Operate APM and LLM observability through the existing `bce apm` CLI. Select one mode first and read only the references required for that mode.
+通过现有的 `bce apm` CLI 执行 APM 和 LLM 可观测性操作。先选择一种模式，再只读取该模式所需的参考资料。
 
-## Route the request
+## 请求路由
 
-| User intent | Read these references | Helper |
+| 用户意图 | 需要读取的参考资料 | 辅助脚本 |
 | --- | --- | --- |
-| Diagnose service traffic, errors, latency, topology, Spans, Traces, SQL, exceptions, JVM, Python, or Go runtime | [apm-query-metrics.md](references/apm-query-metrics.md) and [apm-query-cli-contract.md](references/apm-query-cli-contract.md) | `validate_apm_request.py` |
-| Analyze LLM services, models, calls, Token use, first-token performance, users, sessions, Traces, Spans, or evaluation metrics | [llm-query-metrics.md](references/llm-query-metrics.md) and [llm-query-cli-contract.md](references/llm-query-cli-contract.md) | `validate_llm_request.py` |
-| Review, design, create, update, enable, disable, or delete an APM/LLM alarm policy; inspect alarm events or notification actions | [alarm-catalog.md](references/alarm-catalog.md) and [alarm-cli-contract.md](references/alarm-cli-contract.md) | `validate_alarm_policy.py` |
-| Explain why an APM/LLM alarm fired | Read the alarm references, then the APM or LLM query references selected by `metricKind` and the catalog's explicit baseline mapping | alarm validator plus the matching request validator |
+| 诊断服务流量、错误、延迟、拓扑、Span、Trace、SQL、异常以及 JVM、Python 或 Go 运行时 | [apm-query-metrics.md](references/apm-query-metrics.md) 和 [apm-query-cli-contract.md](references/apm-query-cli-contract.md) | `validate_apm_request.py` |
+| 分析 LLM 服务、模型、调用、Token 用量、首 Token 性能、用户、会话、Trace、Span 或评估指标 | [llm-query-metrics.md](references/llm-query-metrics.md) 和 [llm-query-cli-contract.md](references/llm-query-cli-contract.md) | `validate_llm_request.py` |
+| 查看、设计、创建、更新、启用、禁用或删除 APM/LLM 报警策略；检查报警事件或通知动作 | [alarm-catalog.md](references/alarm-catalog.md) 和 [alarm-cli-contract.md](references/alarm-cli-contract.md) | `validate_alarm_policy.py` |
+| 解释 APM/LLM 报警的触发原因 | 先读取报警参考资料，再根据 `metricKind` 和目录中明确的基线映射，选择对应的 APM 或 LLM 查询参考资料 | 报警校验脚本及匹配的请求校验脚本 |
 
-Do not load every metric catalog or CLI contract by default. Ordinary APM requests do not need LLM references; LLM analysis does not need the alarm catalog unless the user asks about alarms.
+不要默认加载全部指标目录或 CLI 接口约定。普通 APM 请求不需要 LLM 参考资料；除非用户询问报警，否则 LLM 分析不需要加载报警目录。
 
-## Quick examples
+## 快速示例
 
-- “Analyze the last hour of traffic, errors, and latency for a named service, then narrow only the most abnormal dimension.”
-- “Investigate a slow Trace while displaying only IDs, timing, status, and the minimum fields needed for the diagnosis.”
-- “Compare LLM call count, error rate, first-token latency, and Token use by model without exposing prompts or completions.”
-- “Design an APM error-rate alarm as `DISABLED`; validate its complete JSON and show the dry run, but do not create it.”
-- “Explain why an alarm fired by separating the recorded event, mapped metric evidence, and inference.”
-- “Authentication failed during a dry run; stop and report the redacted error and `requestId` without retrying or changing profiles.”
+- “分析指定服务最近一小时的流量、错误和延迟，再仅针对最异常的维度缩小分析范围。”
+- “排查一条慢 Trace，只展示 ID、时间、状态及诊断所需的最少字段。”
+- “按模型比较 LLM 调用次数、错误率、首 Token 延迟和 Token 用量，不暴露提示词或模型生成内容。”
+- “设计一条状态为 `DISABLED` 的 APM 错误率报警；校验完整 JSON 并展示试运行结果，但不要创建策略。”
+- “解释报警触发原因，并区分已记录的事件、映射指标的证据和推断。”
+- “试运行时认证失败；停止操作，报告脱敏后的错误和 `requestId`，不要重试或切换配置档案。”
 
-## Package integrity
+## 包完整性
 
-`SKILL.md`, `references/`, and `scripts/` form one atomic package. Before any CLI call, verify that every reference and helper named by the selected route exists locally. The route table is the package manifest: every file under `references/` and every Python helper under `scripts/` must be named there.
+`SKILL.md`、`references/` 和 `scripts/` 共同组成一个不可拆分的包。调用任何 CLI 命令前，检查所选路由列出的每份参考资料和每个辅助脚本是否都存在于本地。路由表即包清单：`references/` 下的每个文件及 `scripts/` 下的每个 Python 辅助脚本都必须在表中列出。
 
-If a required file is missing, do not guess a schema or reconstruct a helper. Stop before any CLI call and report `status: incomplete_package`, the selected route, each missing package-relative path, the detected package root, and the action “reinstall or extract the complete release archive.”
+如果缺少必需文件，不要猜测请求结构或重新构造辅助脚本。应在调用任何 CLI 命令前停止，并报告 `status: incomplete_package`、所选路由、每个缺失文件相对于包根目录的路径、检测到的包根目录，以及“重新安装或解压完整发布包”的处理建议。
 
-## Shared preconditions
+## 通用前置条件
 
-1. Check `command -v bce`, `bce version`, `bce apm --help`, the selected operation's `--help`, and its generated skeleton. Treat current CLI help and skeleton as authoritative for operation availability and request shape. If a required capability is absent or incompatible with the selected reference, stop and report it instead of guessing another operation or schema.
-2. Check `python3 --version` for a route that names a helper and require Python 3.9 or newer. The packaged helpers use only the Python standard library. If the runtime is absent or too old, stop with `status: missing_runtime` before constructing a cloud request.
-3. Use `bce configure list` only to confirm a usable profile. Never read, print, or request stored AK/SK values or credential files.
-4. Confirm region and strict UTC time bounds. Do not infer region from a service name.
-5. Inspect the first dry run for a new profile or endpoint. CLI metadata may advertise only HTTP for APM; require a trusted/private path or approved HTTPS-capable endpoint when transport policy requires encryption. Never force an unsupported scheme or silently downgrade HTTPS.
-6. Use bounded pagination and minimal output projections. Do not enable `--debug` by default because signed headers and request payloads may be sensitive.
+1. 检查 `command -v bce`、`bce version`、`bce apm --help`、所选操作的 `--help` 及其生成的请求骨架。操作是否可用以及请求结构均以当前 CLI 帮助和请求骨架为准。如果所需能力缺失，或与所选参考资料不兼容，应停止并报告，不要猜测其他操作或请求结构。
+2. 对于需要辅助脚本的路由，检查 `python3 --version`，要求 Python 3.9 或更新版本。包内辅助脚本仅使用 Python 标准库。如果运行环境缺失或版本过旧，应在构造云端请求前停止，并报告 `status: missing_runtime`。
+3. 仅使用 `bce configure list` 确认可用的配置档案。绝不读取、打印或索要已存储的 AK/SK 值或凭据文件。
+4. 确认地域和严格符合 UTC 格式的起止时间。不要根据服务名称推断地域。
+5. 对于新的配置档案或端点，检查首次试运行结果。CLI 元数据可能只声明 APM 支持 HTTP；若传输策略要求加密，必须使用可信或私有链路，或经批准且支持 HTTPS 的端点。绝不强行使用不受支持的协议，也不得静默将 HTTPS 降级。
+6. 限制分页范围，只输出必要字段。不要默认启用 `--debug`，因为签名请求头和请求载荷可能包含敏感信息。
 
-## Operation safety and timeout handling
+## 操作安全与超时处理
 
-| Operation class | Before execution | Timeout or ambiguous result |
+| 操作类别 | 执行前要求 | 超时或结果不明确时的处理 |
 | --- | --- | --- |
-| Read-only query or diagnosis | Validate exact inputs; bound time and pagination | Retry the identical validated request at most once. Then report the failed page or window, partial coverage, and `requestId`; unknown is not empty or zero. |
-| Policy mutation | Read current state; validate JSON; dry-run; show redacted impact; obtain immediate confirmation | Never retry automatically. Read exact current state first, then require a new preview and confirmation for any later attempt. |
-| Authentication, authorization, or validation failure | None | Stop immediately. Report the exact operation, redacted service code/message, and `requestId`; do not retry, change profile, inspect credentials, or guess permissions. |
+| 只读查询或诊断 | 校验确切输入；限制时间范围和分页范围 | 对完全相同且已校验的请求最多重试一次。随后报告失败的页或时间窗口、已覆盖范围和 `requestId`；未知不等于空值或零。 |
+| 策略变更 | 读取当前状态；校验 JSON；试运行；展示脱敏后的影响；在执行前立即获取确认 | 绝不自动重试。先读取确切的当前状态，后续每次尝试都必须重新预览并获得确认。 |
+| 认证、授权或校验失败 | 无 | 立即停止。报告确切的操作、脱敏后的服务错误码或消息，以及 `requestId`；不要重试、切换配置档案、检查凭据或猜测权限。 |
 
-A service `requestId` is diagnostic evidence, not an idempotency key unless the operation explicitly documents that contract.
+服务返回的 `requestId` 是诊断证据，不是幂等键，除非该操作的接口约定明确说明了这一点。
 
-## APM diagnosis mode
+## APM 诊断模式
 
-Keep this mode read-only. Resolve the exact service/environment, establish a RED overview, narrow by one useful dimension, and drill into Span, Trace, SQL, exception, topology, or runtime detail only after identifying an abnormal interval or group. Query `DescribeServiceConfig` only when configuration is needed to interpret thresholds; do not update configuration, tags, or services.
+此模式保持只读。确定准确的服务和环境，建立 RED 概览，选择一个有效维度缩小范围；只有识别到异常时间段或分组后，才进一步查询 Span、Trace、SQL、异常、拓扑或运行时详情。仅在需要通过配置解释阈值时查询 `DescribeServiceConfig`；不要更新配置、标签或服务。
 
-Direct metrics use Prom-style fields such as `service.name`. Trace metrics use public fields such as `service` and `attributes.db.name`. Do not mix the namespaces. Preserve aggregate latency in seconds and Span duration in microseconds; rates remain ratios until explicitly displayed as percentages.
+直接指标使用 `service.name` 等 Prom 风格字段。Trace 指标使用 `service` 和 `attributes.db.name` 等公共字段。不要混用两种命名空间。聚合延迟保持以秒为单位，Span 持续时间保持以微秒为单位；比率在明确展示为百分比之前保持原始比值。
 
-## LLM observability mode
+## LLM 可观测性模式
 
-Start with aggregate calls, errors, latency, Token use, first-token performance, and model TopN. Split Prom-oriented metrics from Doris/BLS-oriented session, user, and Trace metrics. Drill into exact sessions, Traces, or Spans only after an aggregate anomaly or an explicit identifier is selected.
+从聚合调用次数、错误、延迟、Token 用量、首 Token 性能和模型 TopN 开始分析。区分面向 Prom 的指标与面向 Doris/BLS 的会话、用户和 Trace 指标。只有选定聚合异常或明确标识符后，才进一步查询具体会话、Trace 或 Span。
 
-Default to `parseLLMInputOutput=false`. It protects only `DescribeLLMSpans`; session and Trace details can still contain inputs, outputs, identities, and nested content, so project safe metadata at the command boundary. Do not construct an evaluation metric name without an exact trusted base.
+默认设置 `parseLLMInputOutput=false`。此设置仅保护 `DescribeLLMSpans`；会话和 Trace 详情仍可能包含输入、输出、身份信息及嵌套内容，因此必须在命令边界只提取安全的元数据。没有确切且可信的基础名称时，不要自行构造评估指标名称。
 
-## Alarm policy mode
+## 报警策略模式
 
-Alarm evaluator metric names are not query metric names. Select `metricKind`, metric, statistic, dimensions, units, and rule shape from the alarm catalog. Use only the catalog's explicit baseline mapping for threshold evidence; when `LLM_OPERATION` has no authoritative query mapping, report the boundary instead of inventing one.
+报警评估器使用的指标名称与查询指标名称不同。从报警目录中选择 `metricKind`、指标、统计方式、维度、单位和规则结构。阈值证据只能使用目录中明确列出的基线映射；如果 `LLM_OPERATION` 没有权威的查询映射，应说明这一限制，而不是自行编造映射。
 
-Read current policies, check semantic duplicates, query a representative baseline when mapped, validate the complete JSON, and run the exact command with `--dry-run`. Before every mutation:
+读取现有策略，检查语义重复项；存在映射时，查询具有代表性的基线；校验完整 JSON，并使用 `--dry-run` 试运行准备执行的确切命令。每次变更前后都必须遵循以下步骤：
 
-1. show exact policy IDs, target, rule tree, state, missing-data behavior, notification-template IDs, and redacted callback presence;
-2. obtain confirmation immediately before execution;
-3. execute once;
-4. read back every affected policy or verify exact absence after deletion.
+1. 展示准确的策略 ID、目标、规则树、状态、缺失数据处理方式、通知模板 ID，以及脱敏后的回调配置存在情况；
+2. 在执行前立即获得确认；
+3. 执行一次；
+4. 回读每条受影响的策略，或在删除后准确验证其已不存在。
 
-Create requests require `state` and omit `id`; updates require `id` and omit `state`. Use `ApmUpdateAlarmPolicyState` for state changes. Never create an enabled policy unless the preview explicitly says `ENABLED` and the user confirms it. Do not retry an ambiguous timed-out mutation before reading current state.
+创建请求必须包含 `state`，且不包含 `id`；更新请求必须包含 `id`，且不包含 `state`。状态变更使用 `ApmUpdateAlarmPolicyState`。除非预览明确标注 `ENABLED` 且用户已确认，否则绝不创建已启用的策略。在读取当前状态之前，不要重试因超时而结果不明确的变更操作。
 
-APM alarm actions may reference shared BCM notification-template IDs. Read them only through `bce bcm DescribeNotifyTemplates` or `DescribeNotifyTemplate`, and never create, update, or delete BCM notification resources from this Skill.
+APM 报警动作可能引用共享的 BCM 通知模板 ID。仅通过 `bce bcm DescribeNotifyTemplates` 或 `DescribeNotifyTemplate` 读取这些模板；绝不通过本 Skill 创建、更新或删除 BCM 通知资源。
 
-## Alarm-event diagnosis
+## 报警事件诊断
 
-Keep event diagnosis read-only. Join the exact event and exact policy, select the catalog's explicit baseline query for its `metricKind`, and query the recorded interval. Drill into Trace or LLM detail only when the aggregate result and user request justify it. Separate recorded event facts, query evidence, and inference; absence of a baseline mapping is an evidence gap, not a zero or a healthy result.
+事件诊断保持只读。关联准确的事件和策略，根据其 `metricKind` 选择目录中明确列出的基线查询，并查询事件记录的时间区间。只有聚合结果和用户请求足以支持时，才进一步查询 Trace 或 LLM 详情。区分已记录的事件事实、查询证据和推断；缺少基线映射表示证据不足，不代表指标为零或服务健康。
 
-## Privacy, failure, and completion
+## 隐私、失败处理与结果汇报
 
-Spans, Trace attributes, SQL, exception stacks, URLs, callbacks, prompts, completions, tool arguments/results, user/session IDs, and model input/output can be sensitive. Project only fields required for the decision, redact credentials and personal identifiers, and never print a raw response first with the intent to redact later.
+Span、Trace 属性、SQL、异常堆栈、URL、回调、提示词、模型生成内容、工具参数与结果、用户或会话 ID，以及模型输入输出都可能包含敏感信息。仅提取决策所需字段，对凭据和个人标识进行脱敏；绝不能先打印原始响应，再打算事后脱敏。
 
-Authentication, permission, and validation failures are not retryable by guessing. Retry a read timeout or 5xx at most once with the same validated request. Preserve `requestId` when available. Report evidence, raw units, conversions, pagination coverage, missing/zero-filled uncertainty, and the next discriminating read-only query.
+认证、权限和校验失败时，不得靠猜测进行重试。读取超时或遇到 5xx 时，仅可使用同一个已校验的请求重试一次。存在 `requestId` 时予以保留。汇报证据、原始单位、单位换算、分页覆盖范围、数据缺失或补零带来的不确定性，以及下一步有助于区分原因的只读查询。
