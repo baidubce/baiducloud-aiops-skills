@@ -1,6 +1,6 @@
 ---
 name: baiducloud-openclaw-apm-monitoring
-description: Configure and verify OpenClaw telemetry export to Baidu Cloud BCM APM through the official diagnostics-otel plugin. Use when connecting an installed OpenClaw Gateway with an endpoint and complete auth value, enabling model and tool content capture, or troubleshooting native trace export.
+description: 通过官方 diagnostics-otel 插件，配置并验证 OpenClaw 向百度智能云 BCM APM 导出遥测数据。适用于使用接入点和完整鉴权值接入已安装的 OpenClaw Gateway、启用模型和工具内容采集，或排查原生 Trace 导出问题。
 ---
 
 # OpenClaw APM Monitoring
