@@ -18,15 +18,21 @@ export function normalizeEndpoint(value) {
       url.username || url.password || url.search || url.hash) {
     throw new Error('endpoint must use HTTP/HTTPS without embedded credentials, query parameters, or a fragment.');
   }
-  // A console base/origin uses the previously verified BCM LLM ingestion path.
-  // A URL with a path is already a complete write URL and is never guessed.
-  return url.pathname === '/' ? `${url.origin}/api/public/otel/v1/traces` : endpoint;
+  // This setup uses the native OTLP receiver with an Authentication token.
+  if (['/api/public/otel', '/api/public/otel/v1/traces'].includes(url.pathname.replace(/\/+$/, ''))) {
+    throw new Error('The Langfuse route uses a different auth contract. Supply the APM origin or its native /v1/traces endpoint.');
+  }
+  // Preserve an explicitly supplied complete native ingestion URL.
+  return url.pathname === '/' ? `${url.origin}/v1/traces` : endpoint;
 }
 
 export function validateAuth(value) {
   const auth = value.replace(/[\r\n]+$/, '');
   if (!auth || auth.length > 16384 || auth !== auth.trim() || /[\x00-\x1f\x7f]/.test(auth)) {
-    throw new Error('auth must be a nonempty, single-line complete Authorization value without the header name or extra whitespace.');
+    throw new Error('auth must be a nonempty, single-line APM Authentication token without the header name or extra whitespace.');
+  }
+  if (/^(?:Basic|Bearer)\s|^(?:Authorization|Authentication)\s*:/i.test(auth)) {
+    throw new Error('Supply the raw APM Authentication token, without a Basic/Bearer prefix or header name.');
   }
   return auth;
 }
@@ -56,7 +62,7 @@ export function buildPatch(plugins, inventory, endpoint, auth, serviceName) {
       enabled: true,
       otel: {
         enabled: true, tracesEndpoint: endpoint, protocol: 'http/protobuf',
-        headers: { Authorization: auth }, serviceName,
+        headers: { Authentication: auth }, serviceName,
         traces: true, metrics: false, logs: false, sampleRate: 1, captureContent: true,
       },
     },
@@ -126,7 +132,16 @@ export function checkLocal(cli) {
   if (!diagnostics.enabled || !otel.enabled || !otel.traces) issues.push('traces_not_enabled');
   if (otel.protocol !== 'http/protobuf') issues.push('protocol_mismatch');
   if (!otel.tracesEndpoint) issues.push('traces_endpoint_missing');
-  if (!otel.headers?.Authorization) issues.push('authorization_missing');
+  else {
+    try {
+      if (normalizeEndpoint(otel.tracesEndpoint) !== otel.tracesEndpoint) issues.push('traces_endpoint_incomplete');
+    } catch { issues.push('traces_endpoint_invalid_or_langfuse'); }
+  }
+  const auth = Object.entries(otel.headers || {}).find(([name]) => name.toLowerCase() === 'authentication')?.[1];
+  if (typeof auth !== 'string' || !auth) issues.push('authentication_missing');
+  else {
+    try { validateAuth(auth); } catch { issues.push('authentication_invalid'); }
+  }
   if (!otel.captureContent) issues.push('content_capture_disabled');
   if (otel.sampleRate === 0) issues.push('root_trace_sampling_disabled');
   if (otel.metrics !== false || otel.logs !== false) issues.push('extra_signals_enabled');
@@ -147,7 +162,7 @@ export function checkLocal(cli) {
     localConfigReady: issues.length === 0, issues, gatewayReachable,
     plugin: { id: PLUGIN, version: plugin?.version, status: plugin?.status },
     serviceName: otel.serviceName, tracesEndpoint: displayEndpoint,
-    authorizationPresent: Boolean(otel.headers?.Authorization),
+    authenticationPresent: typeof auth === 'string' && Boolean(auth),
     apmReceiptVerified: false,
   };
 }
@@ -160,7 +175,7 @@ export function main(argv = process.argv.slice(2)) {
     check: { type: 'boolean' }, help: { type: 'boolean' },
   } });
   if (opts.help) {
-    console.log('node configure.mjs --endpoint URL (--auth-file FILE | --auth-stdin) [--dry-run] [--restart]\nnode configure.mjs --check\nAuth also accepts OPENCLAW_APM_AUTHORIZATION. Default: configure only; restart the Gateway separately.');
+    console.log('node configure.mjs --endpoint URL (--auth-file FILE | --auth-stdin) [--dry-run] [--restart]\nnode configure.mjs --check\nAuth also accepts OPENCLAW_APM_AUTHENTICATION (legacy raw-token alias: OPENCLAW_APM_AUTHORIZATION). Default: configure only; restart the Gateway separately.');
     return;
   }
   if (opts.restart && opts['no-restart']) throw new Error('--restart and --no-restart cannot be used together.');
@@ -178,7 +193,7 @@ export function main(argv = process.argv.slice(2)) {
   if (!opts['service-name'].trim() || opts['service-name'].length > 128 || /[\x00-\x1f]/.test(opts['service-name'])) throw new Error('The application name must be a single line containing 1 to 128 characters.');
   const endpoint = normalizeEndpoint(opts.endpoint);
   const rawAuth = opts['auth-file'] ? fs.readFileSync(opts['auth-file'], 'utf8') :
-    opts['auth-stdin'] ? fs.readFileSync(0, 'utf8') : process.env.OPENCLAW_APM_AUTHORIZATION || '';
+    opts['auth-stdin'] ? fs.readFileSync(0, 'utf8') : process.env.OPENCLAW_APM_AUTHENTICATION || process.env.OPENCLAW_APM_AUTHORIZATION || '';
   const auth = validateAuth(rawAuth);
   cli(['config', 'validate', '--json']);
   const gatewayMode = getJSON(cli, ['config', 'get', 'gateway', '--json'], { optional: true })?.mode;
@@ -192,7 +207,7 @@ export function main(argv = process.argv.slice(2)) {
   const plan = {
     openclawVersion: version, validatedBaseline: BASELINE,
     pluginPackage: `npm:@openclaw/diagnostics-otel@${version}`, installRequired: needsInstall,
-    tracesEndpoint: endpoint, authorization: '<redacted>', serviceName: opts['service-name'],
+    tracesEndpoint: endpoint, authentication: '<redacted>', serviceName: opts['service-name'],
     protocol: 'http/protobuf', captureContent: true, traces: true, metrics: false, logs: false,
     disableBridge: Boolean(plugins.entries?.['langfuse-bridge'] || inventory.some(p => p.id === 'langfuse-bridge')),
     restartRequested: Boolean(opts.restart), apmReceiptVerified: false,

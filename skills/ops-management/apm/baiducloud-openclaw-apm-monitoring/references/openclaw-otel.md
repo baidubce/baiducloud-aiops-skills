@@ -10,16 +10,16 @@ Use this as the validated baseline and match the plugin to the stable core versi
 
 | Input | Final tracesEndpoint |
 | --- | --- |
-| `https://collector.example.com` | `https://collector.example.com/api/public/otel/v1/traces` |
-| `https://collector.example.com/` | `https://collector.example.com/api/public/otel/v1/traces` |
-| `https://collector.example.com/api/public/otel/v1/traces` | Use this exact complete URL. |
+| `https://collector.example.com` | `https://collector.example.com/v1/traces` |
+| `https://collector.example.com/` | `https://collector.example.com/v1/traces` |
+| `https://collector.example.com/v1/traces` | Use this exact complete URL. |
 | `https://collector.example.com/custom/v1/traces` | Use this exact complete URL without appending another path. |
 
 Example domains are placeholders. An endpoint containing a path is treated as a complete ingestion URL. If a receiver instead provides a base URL with a path prefix, resolve the complete trace URL from its documentation before running setup; do not blindly apply the origin-only expansion rule.
 
-`headers.Authorization` accepts the complete auth value, preserving the receiver's prefix and encoding. Do not convert it into Langfuse public/secret keys. `Authorization` and `Authentication` are different headers, not capitalization variants. This skill does not automatically probe or rotate authentication protocols.
+`headers.Authentication` carries the raw APM token unchanged. Do not prepend `Basic` or `Bearer`, Base64-encode the token, or generate Langfuse public/secret keys. `Authorization` and `Authentication` are different headers, not capitalization variants. The configuration script replaces old telemetry headers so an earlier receiver's credentials are not retained.
 
-Obtain the matching endpoint and auth from the [BCM LLM application monitoring access page](https://console.bce.baidu.com/bcm/#/bcm/llm/apmApplication/access-doc). This skill targets its LLM/Langfuse-compatible ingestion route; do not mix in authentication formats from a different generic OTLP route.
+Obtain the matching endpoint and auth from the [BCM LLM application monitoring access page](https://console.bce.baidu.com/bcm/#/bcm/llm/apmApplication/access-doc). Use its native OTLP endpoint and Authentication token. The Langfuse-compatible paths `/api/public/otel` and `/api/public/otel/v1/traces` accept Langfuse public-key headers or Basic Authorization and are rejected by this setup script. Passing a raw token as Authorization to those paths causes a 401; it does not selectively remove token attributes.
 
 ## Versions and Managed Installations
 
@@ -70,9 +70,9 @@ The script uses `openclaw config patch --stdin` and `--replace-path diagnostics.
     "enabled": true,
     "otel": {
       "enabled": true,
-      "tracesEndpoint": "https://collector.example.com/api/public/otel/v1/traces",
+      "tracesEndpoint": "https://collector.example.com/v1/traces",
       "protocol": "http/protobuf",
-      "headers": { "Authorization": "REPLACE_WITH_COMPLETE_AUTH" },
+      "headers": { "Authentication": "REPLACE_WITH_APM_TOKEN" },
       "serviceName": "openclaw",
       "traces": true,
       "metrics": false,
@@ -146,7 +146,7 @@ Streaming token usage is generally available after the provider returns final us
 | `localConfigReady=false` | Resolve the reported version, plugin, configuration, or Gateway health issues without printing auth. |
 | CLI settings look correct but the Gateway is unchanged | Check the service account, profile, configuration path, Node path, and actual restart. Do not start a second Gateway. |
 | `OTEL_TRACES_EXPORTER=none` | Check the Gateway service environment and remove the trace-disabling setting. The CLI environment check does not reveal the entire service environment. |
-| 401 / 403 | Check the complete auth, header contract, endpoint, account, and region. Do not re-encode auth or retry indefinitely. |
+| 401 / 403 | Verify the native `/v1/traces` endpoint and raw token in `Authentication`, using the same account and region. Do not send the token as `Authorization` or re-encode it. |
 | Root GET returns 404 | This does not prove ingestion failure; writes use protobuf POST to the trace path. |
 | Native POST to the trace path returns 404 | Check the complete ingestion URL for duplicate `/v1/traces` or a mixed-up generic OTLP route. |
 | No trace after the local reply completes | Inspect sampling, exporter errors, network connectivity, and the original request's time window. Allow receiver processing before checking again. Environment-specific list delays are not an OpenClaw compatibility defect. |
@@ -158,4 +158,4 @@ Streaming token usage is generally available after the provider returns final us
 - [OpenClaw 2026.9.3 Release](https://github.com/openclaw/openclaw/releases/tag/v2026.9.3): version and upgrade requirements.
 - Official [OTel Setup](https://docs.openclaw.ai/gateway/opentelemetry/setup), [Configuration](https://docs.openclaw.ai/gateway/opentelemetry/configuration), and [Privacy and Trace Context](https://docs.openclaw.ai/gateway/opentelemetry/privacy-and-trace-context).
 - Official [Configuration CLI](https://docs.openclaw.ai/cli/config) and [Creating and Loading Skills](https://docs.openclaw.ai/tools/creating-skills).
-- Commands and verification fields incorporate native export testing on 2026-09-10. The existing Hermes/OpenCode integration skills informed directory organization; their plugin and authentication mechanisms were not copied.
+- Native model/span behavior was validated on 2026-09-10. Native production ingestion through `/v1/traces` with `Authentication` was verified on 2026-09-16: four genuine OpenClaw traces were accepted by the Collector and found in the LLM console.
