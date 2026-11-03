@@ -22,8 +22,15 @@ for _candidate in (os.path.join(_HERE, "..", "..", "_common"), _HERE):
 import bce_openapi_core as _core  # noqa: E402
 import requests  # noqa: E402
 
-ENDPOINT = "http://10.143.163.25:8018"
-CHAT_PATH = "/v1/ai-agent/chat/stream"
+ENDPOINT = "https://dbsc.bj.baidubce.com"
+CHAT_PATH = "/v1/diagnosis/ai-agent/chat/stream"
+ACCESS_PATH = "/v1/diagnosis/ai-agent/access"
+ACCESS_TIMEOUT = 10  # 开通状态查询只读且轻量，不跟随诊断的长超时
+TICKET_URL = "https://console.bce.baidu.com/support/#/ticket/#/ticket/create_rapid"
+ACCESS_DENIED_CODE = "DBSC_ACCESS_DENIED"
+ACCESS_DENIED_MESSAGE = (
+    "当前账号未开通或无权访问 DBSC Agent 接口（chat/stream）。"
+    "如需使用 DBSC 相关功能，请前往工单页面 {} 申请开启 dbsc agent 白名单后再试。".format(TICKET_URL))
 BceIamAuth = _core.BceIamAuth
 load_credentials = _core.load_credentials
 
@@ -149,6 +156,52 @@ def _error_code(response):
     return code if code in SAFE_ERROR_CODES else None
 
 
+def check_access(timeout=ACCESS_TIMEOUT, credentials=None):
+    """Query the account's DBSC Agent entitlement, limits and token usage.
+
+    ``GET /v1/diagnosis/ai-agent/access`` is not restricted by the whitelist:
+    accounts that are not enabled still get ``enabled=false``. A transport or
+    parse failure is reported as ``checked: false`` instead of being guessed, so
+    callers can decide whether to proceed (the chat endpoint stays authoritative).
+    """
+    credentials = credentials if credentials is not None else load_credentials()
+    headers = {"Accept": "application/json", **_core.agent_source_headers()}
+    try:
+        with requests.get(
+            ENDPOINT + ACCESS_PATH, headers=headers,
+            auth=BceIamAuth(credentials[0], credentials[1], security_token=credentials[2]),
+            timeout=(5, timeout), allow_redirects=False,
+        ) as response:
+            if not 200 <= response.status_code < 300:
+                return {"checked": False, "enabled": None, "status": response.status_code,
+                        "reason": "开通状态接口返回 HTTP {}".format(response.status_code)}
+            try:
+                payload = response.json()
+            except ValueError:
+                return {"checked": False, "enabled": None, "reason": "开通状态响应不是 JSON"}
+    except requests.RequestException:
+        return {"checked": False, "enabled": None,
+                "reason": "开通状态接口连接失败，未能确认是否已开通"}
+    if not isinstance(payload, dict) or not isinstance(payload.get("enabled"), bool):
+        return {"checked": False, "enabled": None, "reason": "开通状态响应缺少 enabled 字段"}
+    result = {"checked": True, "enabled": payload["enabled"]}
+    for key in ("mode", "expireTime", "limits", "usage", "usageTime"):
+        if key in payload:
+            result[key] = payload[key]
+    if not result["enabled"]:
+        result["message"] = ACCESS_DENIED_MESSAGE
+        result["ticketUrl"] = TICKET_URL
+    return safe_output(result)
+
+
+def _access_blocked(session_id, access):
+    """Result for an account without the DBSC Agent entitlement; no chat request is sent."""
+    return {"status": None, "session_id": session_id, "turn_id": None, "answer": "",
+            "completed": False, "errors": [{"code": ACCESS_DENIED_CODE,
+                                           "message": ACCESS_DENIED_MESSAGE}],
+            "access": access}
+
+
 def _post_stream(message, session_id, timeout, on_event, credentials):
     """POST one chat request and fold its SSE stream into a result dict.
 
@@ -164,13 +217,18 @@ def _post_stream(message, session_id, timeout, on_event, credentials):
             ENDPOINT + CHAT_PATH, json=payload,
             headers={"Accept": "text/event-stream",
                      "Content-Type": "application/json",
-                     "Idempotency-Key": str(uuid.uuid4())},
+                     "Idempotency-Key": str(uuid.uuid4()),
+                     **_core.agent_source_headers()},
             auth=BceIamAuth(credentials[0], credentials[1],
                             security_token=credentials[2]),
             stream=True, timeout=(10, timeout), allow_redirects=False,
         ) as response:
             result["status"] = response.status_code
-            if not 200 <= response.status_code < 300:
+            if response.status_code == 403:
+                # The whitelist gate answers 403 for accounts without the entitlement.
+                result["errors"].append({"code": ACCESS_DENIED_CODE,
+                                         "message": ACCESS_DENIED_MESSAGE})
+            elif not 200 <= response.status_code < 300:
                 # Do not echo an arbitrary error page or request headers.
                 result["errors"].append({"code": _error_code(response) or "HTTP_ERROR",
                                          "message": f"HTTP {response.status_code}"})
@@ -215,6 +273,10 @@ def _post_stream(message, session_id, timeout, on_event, credentials):
 def run_chat(message, *, session_id=None, timeout=600, on_event=None):
     """Ask one question, optionally continuing an existing session.
 
+    开通校验（与鉴权一致、不受白名单限制）：未开通时不再请求 chat/stream，直接返回
+    ``DBSC_ACCESS_DENIED`` 并提示工单申请；校验本身失败（网络/解析）时不臆断，
+    继续请求 chat/stream，由服务端结果作为最终依据，并在结果里带上 ``access``。
+
     续写语义（与 DBSC 会话中心一致）：不传 ``session_id`` 即新建会话，服务端在
     ``session_init`` 里返回会话 id；传入该 id 即续写，服务端校验「存在 + 归属当前
     租户（IAM 子账号）+ 未软删除」，否则返回 ``404 ConversationNotFound``；此时本函数
@@ -226,6 +288,12 @@ def run_chat(message, *, session_id=None, timeout=600, on_event=None):
         raise ValueError("timeout 必须大于 0")
     session_id = session_id.strip() if isinstance(session_id, str) else session_id
     credentials = load_credentials()
+    access = check_access(credentials=credentials)
+    if access.get("checked") and not access.get("enabled"):
+        _emit(on_event, "access_denied",
+              {"code": ACCESS_DENIED_CODE, "message": ACCESS_DENIED_MESSAGE,
+               "ticketUrl": TICKET_URL}, credentials)
+        return safe_output(_access_blocked(session_id, access), credentials)
     result = _post_stream(message.strip(), session_id, timeout, on_event, credentials)
     if session_id and any(
         isinstance(err, dict) and err.get("code") == "ConversationNotFound"
@@ -237,6 +305,8 @@ def run_chat(message, *, session_id=None, timeout=600, on_event=None):
               credentials)
         result = _post_stream(message.strip(), None, timeout, on_event, credentials)
         result["session_replaced"] = True
+    if not access.get("checked"):
+        result["access"] = access
     return result
 
 
@@ -267,7 +337,7 @@ def start_background(message, session_id=None, timeout=600):
 def _checked_output_path(path):
     """Resolve ``path``; only ``start_background`` files in the temp dir are accepted.
 
-    A finished file is deleted after being read, so arbitrary paths must be refused.
+    Keep reads and progress-state writes restricted to the background output directory.
     """
     real = os.path.realpath(path)
     name = os.path.basename(real)
@@ -361,9 +431,9 @@ def poll_background(path, wait=POLL_WAIT):
     calls and results, clarify / confirmations, errors; long text clipped),
     ``answer_delta`` the newly streamed answer and ``running`` the tool calls /
     sub-tasks still in flight. Where the previous poll stopped is kept in
-    ``<file>.state``, so callers need no cursor. Once the final ``result`` line is in
-    (finishing during the wait returns at once), it is returned and both files are
-    deleted.
+    ``<file>.state`` for a single progress poller, so callers need no cursor. Once
+    the final ``result`` line is in (finishing during the wait returns at once),
+    every poll returns it in full. Both files are retained for later recovery.
     """
     real = _checked_output_path(path)
     deadline = time.monotonic() + wait
@@ -400,13 +470,15 @@ def poll_background(path, wait=POLL_WAIT):
               "events": len(events), "steps": steps}
     if result is None:
         status.update(answer_delta=delta, running=_running(events))
-        with open(state_path, "w", encoding="utf-8") as fh:
-            json.dump({"seen": len(events), "started": started}, fh)
     else:
         status["result"] = result  # result.answer already holds the full answer
-        for leftover in (real, state_path):
-            with contextlib.suppress(OSError):  # Windows: the exiting child may still hold it
-                os.remove(leftover)
+    try:
+        with open(state_path, "w", encoding="utf-8") as fh:
+            json.dump({"seen": len(events), "started": started}, fh)
+    except OSError:
+        if result is None:
+            raise
+        status["warning"] = "完整结果已恢复，但轮询进度无法保存；后续读取可能重复进展"
     return status
 
 
@@ -420,22 +492,34 @@ def main(argv=None):
     parser.add_argument("--background", action="store_true",
                         help="后台运行：NDJSON 写入系统临时目录并立即返回 output_file，再用 --poll 轮询")
     parser.add_argument("--poll", metavar="OUTPUT_FILE",
-                        help="读取 --background 的输出：自上次轮询以来的新进展，或最终 result")
+                        help="读取 --background 的新进展或完整 result；完成结果可重复读取，文件默认保留")
     parser.add_argument("--wait", type=int, default=POLL_WAIT,
                         help="--poll 最多等待秒数（默认 10），完成时提前返回")
     parser.add_argument("--check-credentials", action="store_true")
+    parser.add_argument("--check-access", action="store_true",
+                        help="查询当前账号的 DBSC Agent 开通状态、生效限额与用量；未开通退出码 2")
     args = parser.parse_args(argv)
     if args.check_credentials:
         configured = _core.credentials_status()["configured"]
         print(json.dumps({"configured": configured}))
         return 0 if configured else 2
+    if args.check_access:
+        try:
+            access = check_access()
+        except SystemExit:
+            print(NO_CREDENTIALS, file=sys.stderr)
+            return 2
+        print(json.dumps(access, ensure_ascii=False))
+        return 0 if access.get("enabled") is True else 2
     if args.poll:
         try:
             status = poll_background(args.poll, wait=max(args.wait, 0))
         except FileNotFoundError:
-            status = {"error": "输出文件不存在：可能已读到 result 并删除，或路径有误"}
+            status = {"code": "LOCAL_OUTPUT_ERROR",
+                      "error": "输出文件不存在或当前执行环境不可见；请恢复原任务返回的 result，不要自动重新提交 DBSC 请求"}
         except (OSError, ValueError) as exc:
-            status = {"error": str(exc)}
+            status = {"code": "LOCAL_OUTPUT_ERROR",
+                      "error": f"本地结果读取失败：{exc}；请恢复原任务返回的 result，不要自动重新提交 DBSC 请求"}
         print(json.dumps({"poll": status}, ensure_ascii=False), flush=True)
         return 2 if "error" in status else 0
     if not args.message or not args.message.strip() or args.timeout <= 0:

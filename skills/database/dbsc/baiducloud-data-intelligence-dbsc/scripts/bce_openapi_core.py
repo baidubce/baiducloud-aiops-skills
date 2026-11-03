@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Shared IAM-signed (BCE Auth v1) HTTP client core for Baidu Cloud OpenAPI.
 
-Read operations (GET/HEAD) run freely; mutating methods require allow_write.
+GET/HEAD and declared read-only requests (read_only, e.g. query-style POST) run
+freely; writes require allow_write.
 Credentials come only from the environment or ~/.bce/credentials; never from CLI.
 
 Each skill ships a thin entry script that passes a ServiceConfig describing its
@@ -320,6 +321,9 @@ def _parse_response(response):
 
 def _send(method, url, *, params, data, headers, auth, timeout, connect_ip=None):
     """发送一次请求；connect_ip 为空走普通 requests，否则连该 IP 但保留 Host/SNI。"""
+    headers = dict(headers or {})
+    for name, value in agent_source_headers().items():
+        headers.setdefault(name, value)
     if not connect_ip:
         return requests.request(method, url, params=params, data=data,
                                 headers=headers, auth=auth, timeout=timeout)
@@ -336,14 +340,19 @@ def _send(method, url, *, params, data, headers, auth, timeout, connect_ip=None)
 
 
 def run_request(config, method, path, *, query=None, body=None, region=None,
-                allow_write=False, timeout=30, show_headers=False):
+                allow_write=False, read_only=False, timeout=30, show_headers=False):
     """Sign and send one OpenAPI request; return {status, body[, headers]}."""
     method = method.upper()
     if not path.startswith("/"):
         raise SystemExit("--path 必须以 / 开头，例如 /v1/instance")
-    if method not in READ_METHODS and not allow_write:
+    if read_only and allow_write:
+        raise SystemExit("--read-only 与 --allow-write 不能同时使用")
+    if read_only and method not in READ_METHODS | {"POST"}:
+        raise SystemExit("--read-only 只能用于 POST 查询接口；{} 按写操作处理".format(method))
+    if method not in READ_METHODS and not (allow_write or read_only):
         raise SystemExit(
-            "{} 是写操作，需显式加 --allow-write（并先与用户确认）".format(method))
+            "{} 请求需声明：查询类接口加 --read-only；写操作先与用户确认再加 --allow-write"
+            .format(method))
     access_key, secret_key, token = load_credentials()
     url = "{}://{}{}".format(
         resolve_protocol(config), resolve_endpoint(config, region), path)
@@ -462,6 +471,90 @@ def load_internal_hosts():
         return {}
 
 
+# 发出请求的宿主 agent 标识：构建时按宿主写入与本模块同目录的 agent_source.json
+# （见 scripts/build-multihost.sh），缺失/非法时用兜底值。不参与签名（非 x-bce-*）。
+AGENT_SOURCE_HEADER = "X-Agent-Source"
+AGENT_SOURCE_FALLBACK = "unknown"
+_AGENT_SOURCE_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,31}$")
+
+
+def _agent_source_path():
+    """返回与本模块同目录的 agent_source.json 路径。"""
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent_source.json")
+
+
+def load_agent_source():
+    """读构建时注入的宿主标识；缺失/损坏/不合法返回 AGENT_SOURCE_FALLBACK。"""
+    try:
+        with open(_agent_source_path(), encoding="utf-8") as handle:
+            value = (json.load(handle) or {}).get("agentSource")
+    except (OSError, ValueError, AttributeError):
+        return AGENT_SOURCE_FALLBACK
+    if isinstance(value, str) and _AGENT_SOURCE_RE.match(value):
+        return value
+    return AGENT_SOURCE_FALLBACK
+
+
+# 运行时实际所在宿主：与构建时标识并行上报，用于发现"A 宿主的产物被拷到 B 宿主里用"。
+AGENT_SOURCE_DETECTED_HEADER = "X-Agent-Source-Detected"
+# Ducc 有专属环境变量，最先判断；其余派生宿主（可能套在 Claude Code/Codex 之上而继承
+# 其环境变量）先按安装路径识别，再看通用宿主的环境变量，最后才用通用宿主的安装路径。
+_DERIVED_PATH_MARKERS = (
+    ("dumate", ("qianfan-desktop-app", "dumate")),
+    ("workbuddy", ("workbuddy", ".codebuddy")),
+    ("ducc", ("ducc",)),
+)
+_ENV_MARKERS = (
+    ("cursor", ("CURSOR_AGENT",)),
+    ("codex", ("CODEX_SANDBOX", "CODEX_SANDBOX_NETWORK_DISABLED", "CODEX_THREAD_ID")),
+    ("claude", ("CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT")),
+)
+_GENERIC_PATH_MARKERS = (
+    ("codex", ("/.codex/",)),
+    ("claude", ("/.claude/",)),
+    ("cursor", ("/.cursor/",)),
+)
+
+
+def _script_path():
+    """返回本模块所在路径（小写、统一为 / 分隔），用于按安装目录识别宿主。"""
+    return os.path.abspath(__file__).replace("\\", "/").lower()
+
+
+def _match_path(markers, path):
+    """返回首个路径命中的宿主名；无命中返回 None。"""
+    for host, needles in markers:
+        if any(needle in path for needle in needles):
+            return host
+    return None
+
+
+def _is_ducc(environ):
+    """Ducc（claude-go）逐会话注入的标记；原生 Claude Code 也有 CLAUDECODE，不能据此区分。"""
+    return bool(environ.get("DUCC_SESSION_KEY")) or environ.get("DUCC_AUTH_SOURCE") == "ducc"
+
+
+def detect_agent_source(environ=None, path=None):
+    """按环境变量与安装路径识别运行时宿主；都识别不出返回 AGENT_SOURCE_FALLBACK。"""
+    environ = os.environ if environ is None else environ
+    path = _script_path() if path is None else path
+    if _is_ducc(environ):
+        return "ducc"
+    host = _match_path(_DERIVED_PATH_MARKERS, path)
+    if host:
+        return host
+    for host, names in _ENV_MARKERS:
+        if any(environ.get(name) for name in names):
+            return host
+    return _match_path(_GENERIC_PATH_MARKERS, path) or AGENT_SOURCE_FALLBACK
+
+
+def agent_source_headers():
+    """返回构建时宿主与运行时识别宿主两个请求头。"""
+    return {AGENT_SOURCE_HEADER: load_agent_source(),
+            AGENT_SOURCE_DETECTED_HEADER: detect_agent_source()}
+
+
 def detect_ip_not_allowed(status, body):
     """判断响应是否为 BCE 的 request-ip-not-allowed（大小写不敏感，兼容 2xx 体内报错）。"""
     if isinstance(body, str):
@@ -491,7 +584,7 @@ def main(config: ServiceConfig, argv=None) -> int:
     """CLI entry: build, sign, send one OpenAPI request; print JSON result."""
     _ensure_utf8_output()
     ap = argparse.ArgumentParser(
-        description="百度云 {} OpenAPI（IAM 签名）请求工具；写操作需 --allow-write".format(
+        description="百度云 {} OpenAPI（IAM 签名）请求工具；查询类非 GET 接口加 --read-only；写操作需 --allow-write".format(
             config.label))
     ap.add_argument("--method", default="GET", help="HTTP 方法，默认 GET")
     ap.add_argument("--path", help="以 / 开头，如 /v1/instance")
@@ -510,6 +603,8 @@ def main(config: ServiceConfig, argv=None) -> int:
             config.label, config.endpoint_env)
     ap.add_argument("--region", help=region_help)
     ap.add_argument("--allow-write", action="store_true", help="放行非 GET/HEAD 的写操作")
+    ap.add_argument("--read-only", action="store_true",
+                    help="声明本次非 GET 请求为查询/只读语义，直接发送")
     ap.add_argument("--timeout", type=int, default=30, help="超时秒数，默认 30")
     ap.add_argument("--show-headers", action="store_true", help="附带脱敏后的响应头")
     args = ap.parse_args(argv)
@@ -529,7 +624,7 @@ def main(config: ServiceConfig, argv=None) -> int:
     try:
         result = run_request(
             config, args.method, args.path, query=parse_query(args.query), body=body,
-            region=args.region, allow_write=args.allow_write,
+            region=args.region, allow_write=args.allow_write, read_only=args.read_only,
             timeout=args.timeout, show_headers=args.show_headers)
     except SystemExit:
         raise
