@@ -1,0 +1,582 @@
+{
+  "schema_version": 1,
+  "skills": [
+    {
+      "name": "baiducloud-auth",
+      "domain": "common",
+      "summary": "AK/SK and STS authentication through bce-cli",
+      "keywords": [
+        "auth",
+        "login",
+        "credential",
+        "profile",
+        "sts",
+        "ak",
+        "sk"
+      ]
+    },
+    {
+      "name": "baiducloud-cli",
+      "domain": "common",
+      "summary": "Use and troubleshoot services and operations supported by the official bce-cli",
+      "keywords": [
+        "bce",
+        "cli",
+        "service",
+        "operation",
+        "command",
+        "profile",
+        "region",
+        "output",
+        "pager",
+        "dry-run",
+        "debug",
+        "help",
+        "discover"
+      ]
+    },
+    {
+      "name": "baiducloud-docs",
+      "domain": "common",
+      "summary": "Search and read official Baidu Cloud documentation: search, read, browse the table of contents, and match keywords within a product",
+      "keywords": [
+        "docs",
+        "documentation",
+        "文档",
+        "帮助文档",
+        "官方文档",
+        "search",
+        "grep",
+        "reference",
+        "error-code",
+        "错误码",
+        "parameter",
+        "limit"
+      ]
+    },
+    {
+      "name": "baiducloud-find-skills",
+      "domain": "common",
+      "summary": "Discover and install exact BaiduCloud skills",
+      "keywords": [
+        "find",
+        "discover",
+        "install",
+        "skill"
+      ]
+    },
+    {
+      "name": "baiducloud-gateway",
+      "domain": "common",
+      "summary": "Pre-invocation gateway: check Skill updates and report desensitized attribution before and after any baiducloud-* or qianfan-* Skill runs",
+      "keywords": [
+        "gateway",
+        "preflight",
+        "attribution",
+        "telemetry",
+        "report",
+        "update",
+        "event-id",
+        "caller",
+        "source-layer"
+      ]
+    },
+    {
+      "name": "baiducloud-openapi",
+      "domain": "common",
+      "summary": "Safely invoke CFC and other documented OpenAPI-only services through the tested runtime",
+      "keywords": [
+        "openapi",
+        "api",
+        "signing",
+        "signature",
+        "authentication",
+        "request",
+        "https",
+        "sts",
+        "cfc",
+        "函数计算",
+        "cloud-function-compute",
+        "serverless",
+        "function",
+        "invocation",
+        "xflow",
+        "workflow"
+      ]
+    },
+    {
+      "name": "baiducloud-ls",
+      "domain": "compute",
+      "summary": "Manage LS lightweight application servers, custom images, and snapshots through the portal OpenAPI",
+      "keywords": [
+        "ls",
+        "lightweight-server",
+        "instance",
+        "image",
+        "snapshot",
+        "vnc",
+        "remote-auth",
+        "renew",
+        "resize",
+        "rebuild",
+        "rollback"
+      ]
+    },
+    {
+      "name": "baiducloud-qianfan",
+      "domain": "qianfan",
+      "summary": "Route Baidu Qianfan large-model platform tasks to the official qianfan CLI and its bundled skills",
+      "keywords": [
+        "qianfan",
+        "千帆",
+        "qianfan-cli",
+        "llm",
+        "chat",
+        "inference",
+        "model",
+        "profile",
+        "usage",
+        "connect"
+      ]
+    }
+  ],
+  "external_sources": [
+    {
+      "repo": "baidubce/baiducloud-aiops-skills",
+      "homepage": "https://github.com/baidubce/baiducloud-aiops-skills",
+      "description": "Baidu Intelligent Cloud AIOps skills: diagnosis, audit, and monitoring management for BCC, VPC/CSN/DNS/BLB networking, APM/BCM observability, Hermes LLM tracing, BLS logging, BOS storage, and databases (RDS, Redis, MongoDB, DTS, DBSC) with billing and IAM.",
+      "skills": [
+        {
+          "name": "baiducloud-vm-diagnosis",
+          "domain": "compute",
+          "summary": "从虚机内部只读诊断 Linux 虚机的内存/OOM、JVM、网络丢包、磁盘 IO、负载与 OS 健康",
+          "keywords": [
+            "vm",
+            "虚机",
+            "诊断",
+            "diagnosis",
+            "linux",
+            "oom",
+            "memory",
+            "jvm",
+            "network",
+            "io",
+            "load",
+            "cpu",
+            "sysom",
+            "bcc"
+          ]
+        },
+        {
+          "name": "baiducloud-bos",
+          "domain": "storage",
+          "preferred": true,
+          "summary": "百度智能云对象存储 BOS 集成：上传/下载/删除/复制、列举、签名 URL、图片处理、目录同步",
+          "keywords": [
+            "bos",
+            "对象存储",
+            "object-storage",
+            "上传",
+            "下载",
+            "签名url",
+            "图片处理",
+            "bcecmd",
+            "sync",
+            "bucket"
+          ]
+        },
+        {
+          "name": "baiducloud-apm",
+          "domain": "ops-management",
+          "summary": "通过 bce apm CLI 诊断 APM 应用与 LLM 负载、查询 trace 与指标、只读管理告警策略",
+          "keywords": [
+            "apm",
+            "应用性能监控",
+            "llm",
+            "trace",
+            "span",
+            "metrics",
+            "告警",
+            "alarm",
+            "observability",
+            "bce-cli"
+          ]
+        },
+        {
+          "name": "baiducloud-hermes-llm-monitoring",
+          "domain": "ops-management",
+          "summary": "通过内置 Langfuse 插件与 BCM 接入点配置并验证 Hermes Agent 的 LLM/APM 可观测与 OTEL trace 上报",
+          "keywords": [
+            "hermes",
+            "langfuse",
+            "llm",
+            "apm",
+            "bcm",
+            "otel",
+            "opentelemetry",
+            "trace",
+            "可观测",
+            "监控",
+            "observability"
+          ]
+        },
+        {
+          "name": "baiducloud-openclaw-apm-monitoring",
+          "domain": "ops-management",
+          "summary": "配置并验证 OpenClaw 遥测经 diagnostics-otel 插件上报到百度云 BCM APM",
+          "keywords": [
+            "openclaw",
+            "apm",
+            "bcm",
+            "otel",
+            "opentelemetry",
+            "trace",
+            "监控",
+            "telemetry",
+            "gateway"
+          ]
+        },
+        {
+          "name": "baiducloud-opencode-apm-monitoring",
+          "domain": "ops-management",
+          "summary": "通过 opencode-plugin-otel 配置并验证 OpenCode 遥测上报到百度云 BCM APM",
+          "keywords": [
+            "opencode",
+            "apm",
+            "bcm",
+            "otel",
+            "opentelemetry",
+            "otlp",
+            "trace",
+            "监控",
+            "telemetry"
+          ]
+        },
+        {
+          "name": "baiducloud-bce-bls-skill",
+          "domain": "ops-management",
+          "summary": "安装并验证百度智能云日志服务 BLS 官方 AI Agent skill（bce-bls）",
+          "keywords": [
+            "bls",
+            "日志服务",
+            "log",
+            "bce-bls",
+            "安装器",
+            "installer",
+            "logging"
+          ]
+        },
+        {
+          "name": "baiducloud-bcm",
+          "domain": "ops-management",
+          "summary": "通过 BCE CLI 查询百度智能云监控 BCM 资源与指标、管理告警策略与报警屏蔽、诊断告警触发与通知问题",
+          "keywords": [
+            "bcm",
+            "云监控",
+            "metric",
+            "指标",
+            "告警",
+            "alarm",
+            "报警屏蔽",
+            "alarm-policy",
+            "诊断",
+            "diagnosis",
+            "bce-cli"
+          ]
+        },
+        {
+          "name": "baiducloud-csn-route-relationship-audit",
+          "domain": "network",
+          "summary": "只读审计 CSN 路由表、关联/学习关系与路由条目，输出拓扑、冲突与孤立引用报告",
+          "keywords": [
+            "csn",
+            "云智能网",
+            "路由",
+            "route",
+            "关联",
+            "学习",
+            "审计",
+            "audit",
+            "黑洞路由",
+            "topology"
+          ]
+        },
+        {
+          "name": "baiducloud-csn-topology-status-audit",
+          "domain": "network",
+          "summary": "只读盘点 CSN 实例与已加载网络实例，生成跨地域拓扑与状态异常报告",
+          "keywords": [
+            "csn",
+            "云智能网",
+            "拓扑",
+            "topology",
+            "网络实例",
+            "状态",
+            "审计",
+            "audit",
+            "inventory"
+          ]
+        },
+        {
+          "name": "baiducloud-public-dns-record-audit",
+          "domain": "network",
+          "summary": "只读审计公网 DNS 域名与解析记录质量：重复记录、CNAME 冲突、TTL、MX、泛解析",
+          "keywords": [
+            "dns",
+            "公网dns",
+            "解析记录",
+            "域名",
+            "record",
+            "cname",
+            "ttl",
+            "审计",
+            "audit"
+          ]
+        },
+        {
+          "name": "baiducloud-privatezone-vpc-association-audit",
+          "domain": "network",
+          "summary": "只读审计内网 DNS PrivateZone 及其 VPC 关联，输出私有域到 VPC 关联拓扑与异常",
+          "keywords": [
+            "privatezone",
+            "内网dns",
+            "私有域",
+            "vpc",
+            "关联",
+            "association",
+            "审计",
+            "audit"
+          ]
+        },
+        {
+          "name": "baiducloud-peer-connection-inventory-audit",
+          "domain": "network",
+          "summary": "只读盘点 VPC 对等连接实例：状态、带宽、计费、到期、DNS 同步与拓扑",
+          "keywords": [
+            "对等连接",
+            "peer-connection",
+            "peerconn",
+            "vpc",
+            "inventory",
+            "盘点",
+            "审计",
+            "audit"
+          ]
+        },
+        {
+          "name": "baiducloud-peer-connectivity-diagnosis",
+          "domain": "network",
+          "summary": "只读诊断 VPC 对等连接不通/单向不通/IP端口不可达：路由、安全组、ACL 证据",
+          "keywords": [
+            "对等连接",
+            "peer",
+            "连通性",
+            "connectivity",
+            "诊断",
+            "diagnosis",
+            "路由",
+            "安全组",
+            "acl",
+            "vpc"
+          ]
+        },
+        {
+          "name": "baiducloud-vpc-inventory-audit",
+          "domain": "network",
+          "summary": "只读盘点 VPC 及子网、路由表、安全组、ACL、弹性网卡，生成资产与拓扑报告",
+          "keywords": [
+            "vpc",
+            "私有网络",
+            "子网",
+            "subnet",
+            "路由表",
+            "安全组",
+            "acl",
+            "eni",
+            "inventory",
+            "审计",
+            "audit"
+          ]
+        },
+        {
+          "name": "baiducloud-vpc-security-policy-audit",
+          "domain": "network",
+          "summary": "只读审计 VPC 安全组/企业安全组/ACL：公网暴露、敏感端口、宽泛规则与优先级遮蔽",
+          "keywords": [
+            "vpc",
+            "安全组",
+            "security-group",
+            "企业安全组",
+            "acl",
+            "公网暴露",
+            "端口",
+            "合规",
+            "审计",
+            "audit"
+          ]
+        },
+        {
+          "name": "baiducloud-blb",
+          "domain": "network",
+          "summary": "管理百度云负载均衡 BLB/AppBLB：实例、监听器、后端服务器、服务器组、转发策略、健康检查、安全组、计费询价与巡检",
+          "keywords": [
+            "blb",
+            "appblb",
+            "负载均衡",
+            "load-balancer",
+            "监听器",
+            "后端服务器",
+            "健康检查",
+            "服务器组",
+            "转发策略",
+            "vip",
+            "bce-cli"
+          ]
+        },
+        {
+          "name": "baiducloud-data-intelligence-dbsc",
+          "domain": "database",
+          "summary": "数据库智能驾驶舱 DBSC：RDS/GaiaDB/Redis/MongoDB 的巡检报告、慢 SQL、会话与死锁、空间分析、大 Key、SQL 限流与诊断",
+          "keywords": [
+            "dbsc",
+            "数据库",
+            "巡检",
+            "健康度",
+            "慢sql",
+            "死锁",
+            "会话",
+            "空间分析",
+            "大key",
+            "诊断",
+            "rds",
+            "gaiadb",
+            "redis",
+            "mongodb"
+          ]
+        },
+        {
+          "name": "baiducloud-data-intelligence-dts",
+          "domain": "database",
+          "summary": "查询与管理百度智能云 DTS 数据传输：迁移/同步/校验任务的创建、预检、启停、数据校验与一键反向",
+          "keywords": [
+            "dts",
+            "数据传输",
+            "数据迁移",
+            "数据同步",
+            "数据校验",
+            "迁移任务",
+            "同步任务",
+            "预检",
+            "一键反向",
+            "database"
+          ]
+        },
+        {
+          "name": "baiducloud-data-intelligence-mongodb",
+          "domain": "database",
+          "summary": "查询与管理百度智能云 DocDB for MongoDB：实例、备份恢复、白名单、用户与库、日志、扩容与重启",
+          "keywords": [
+            "mongodb",
+            "docdb",
+            "文档数据库",
+            "实例",
+            "备份",
+            "恢复",
+            "白名单",
+            "扩容",
+            "重启",
+            "database"
+          ]
+        },
+        {
+          "name": "baiducloud-data-intelligence-rds",
+          "domain": "database",
+          "summary": "查询与管理百度智能云 RDS：实例、数据库、账号、备份/Binlog、参数与模板、白名单/SSL、只读组、日志与订单",
+          "keywords": [
+            "rds",
+            "mysql",
+            "postgresql",
+            "sqlserver",
+            "云数据库",
+            "实例",
+            "备份",
+            "binlog",
+            "参数",
+            "白名单",
+            "只读组",
+            "database"
+          ]
+        },
+        {
+          "name": "baiducloud-data-intelligence-bcm",
+          "domain": "database",
+          "summary": "查询与管理云监控 BCM：各云产品监控指标与曲线（含 Redis/SCS）、报警策略与历史、通知组、Dashboard、自定义监控",
+          "keywords": [
+            "bcm",
+            "云监控",
+            "监控指标",
+            "metric",
+            "报警",
+            "alarm",
+            "通知组",
+            "dashboard",
+            "scs",
+            "redis",
+            "database"
+          ]
+        },
+        {
+          "name": "baiducloud-data-intelligence-billing",
+          "domain": "database",
+          "summary": "查询百度智能云财务与账单：资源月账单、计费项账单、账户余额、成本分摊、订单与代金券（支付/续费/取消为禁止项）",
+          "keywords": [
+            "billing",
+            "账单",
+            "费用",
+            "余额",
+            "订单",
+            "代金券",
+            "成本",
+            "分摊",
+            "finance",
+            "续费"
+          ]
+        },
+        {
+          "name": "baiducloud-data-intelligence-iam",
+          "domain": "database",
+          "summary": "查询与管理 IAM 访问控制：子用户、用户组、权限策略、AccessKey 与授权关联",
+          "keywords": [
+            "iam",
+            "访问控制",
+            "子用户",
+            "用户组",
+            "权限策略",
+            "accesskey",
+            "授权",
+            "鉴权",
+            "policy",
+            "database"
+          ]
+        },
+        {
+          "name": "baiducloud-data-intelligence-redis",
+          "domain": "database",
+          "summary": "查询与管理百度智能云 Redis/SCS：实例、账号、备份、白名单、参数与模板、日志、安全组、热活/多活实例组与订单",
+          "keywords": [
+            "redis",
+            "scs",
+            "缓存",
+            "实例",
+            "备份",
+            "白名单",
+            "参数",
+            "热活",
+            "多活",
+            "database"
+          ]
+        }
+      ]
+    }
+  ]
+}
