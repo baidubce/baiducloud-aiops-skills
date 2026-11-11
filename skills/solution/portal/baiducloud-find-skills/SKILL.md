@@ -18,3 +18,9 @@ node scripts/find_skills.mjs install baiducloud-bos
 node scripts/find_skills.mjs install baiducloud-bos --repo baidubce/baiducloud-aiops-skills
 node scripts/find_skills.mjs status
 ```
+
+## Fallback when a capability is missing
+
+When another Baidu Cloud Skill fails because it does not cover the requested product or operation (not because of authentication, permission, parameter, network, or throttling errors), search once with a short product keyword, show the user the matching Skill name, source `repo`, and purpose, and install only after they confirm. Then invoke the new Skill if the session already lists it; otherwise read `<host skills dir>/<name>/SKILL.md` (`~/.comate/skills`, `~/.claude/skills`, or `~/.codex/skills`) and continue the original task. `status` does not return an install path. If nothing matches, say so and stop.
+
+`references/find-skills-fallback-rule.md` encodes this flow as an always-apply rule. Install it with `node scripts/install_rule.mjs` (`--host comate|claude|codex|all`, `--project <dir>` for Cursor, `--dry-run`, `--uninstall`); the script is idempotent and only touches its own rule file or marked block.
