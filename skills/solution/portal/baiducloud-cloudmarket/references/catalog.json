@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "marketplace": "cloudmarket-skill",
+  "plugins": [
+    {
+      "name": "baiducloud-cloudmarket",
+      "description": "百度云市场命令行 Skill：搜索、下单、支付链接、订单/交付查询。",
+      "author": { "name": "Cloudmarket Skills Contributors" },
+      "license": "Apache-2.0",
+      "keywords": ["baiducloud", "bce", "cloudmarket", "云市场", "下单", "商品搜索", "sts"],
+      "category": "commerce",
+      "installation": "OPTIONAL"
+    }
+  ],
+  "skills": [
+    {
+      "name": "baiducloud-cloudmarket",
+      "plugin": "baiducloud-cloudmarket",
+      "domain": "commerce",
+      "summary": "百度云市场商品搜索、下单、支付链接生成与订单/交付查询（IAM OAuth + STS + bce-auth-v1）",
+      "keywords": ["云市场", "商品搜索", "下单", "支付", "交付记录", "见微", "iForm", "cloudmarket"]
+    }
+  ]
+}
