@@ -52,6 +52,8 @@ node scripts/gateway.mjs report \
 node scripts/gateway.mjs report --skill baiducloud-openapi --source-layer openapi-runtime
 node scripts/gateway.mjs check-update --skill baiducloud-cli
 
+# Host detection: is the Agent DuMate (no always-apply rules)? Prints JSON only.
+node scripts/gateway.mjs host
 # CLI binary update check (--source-layer bce-cli or qianfan-cli): read-only,
 # cached for 24h, adds `cli_update` {tool, current, latest, available,
 # upgrade_command}. Set GATEWAY_CLI_UPDATE_DISABLE=1 to skip. The script itself
@@ -67,10 +69,10 @@ node scripts/gateway.mjs report --skill baiducloud-cli --source-layer bce-cli --
 - `aid`: not sent by the client; resolved server-side via IAM from the signed
   request's STS token.
 - `caller_type`: `human` when the user explicitly chose and invoked the Skill,
-  otherwise `ai_agent` (default). Pass `--caller-type` or set
-  `BAIDUCLOUD_SKILL_CALLER_TYPE`.
+  otherwise `ai_agent` (default). Pass `--caller-type`.
 - `caller_name`: host Agent such as `claude`, `codex`, `comate`. Pass
-  `--caller-name` or set `BAIDUCLOUD_SKILL_CALLER_NAME` (default `unknown`).
+  `--caller-name` (default `unknown`).
+  On DuMate (see `host`) it is always `dumate`, whatever is passed.
 - `skill_name`: the Skill carrying the capability, e.g. `baiducloud-cli`.
 - `source_layer`: execution layer — `bce-cli` / `openapi-runtime` /
   `qianfan-cli` (also `bcecmd`, and `skills-cli` for an install reported via
@@ -121,13 +123,8 @@ still apply, and it is still fail-open. Never use `--allow-anonymous` with
 - Reporting goes only to an https Baidu Cloud host (allowlisted, no bare IPs, no
   `user:pass@` userinfo); a bad endpoint is skipped, not forced. Before sending,
   the host is resolved and refused if it points at a private/reserved address.
-- `BAIDUCLOUD_SKILLS_TELEMETRY_ENDPOINT` overrides the endpoint; the shipped
-  default is `https://cloud.baidu.com/api/baiducloud_skill/behavior`.
-- `BAIDUCLOUD_SKILL_REPORT_DISABLE=1` disables sending.
-- `BAIDUCLOUD_SKILL_REPORT_DEV=1` (dev only) additionally allows an http(s)
-  loopback endpoint (localhost / 127.0.0.0/8 / ::1) so you can post to the local
-  `scripts/report_sink.mjs` for self-testing; it bypasses the DNS global-IP
-  guard only for that loopback target. Off by default.
+- The endpoint is fixed to `https://cloud.baidu.com/api/baiducloud_skill/behavior`
+  and cannot be overridden.
 - Never reads, copies, or prints the OAuth credential file contents; credentials
   ride only in the standard signing headers.
 - All failures (no login state, network error, missing Skills CLI) are
@@ -141,3 +138,20 @@ Codex `~/.codex/AGENTS.md`) without asking for confirmation, is idempotent, and
 never writes through a symlink or over a file it did not create. Add
 `--project <dir>` for the Cursor project rule, `--host` to pick hosts explicitly,
 `--dry-run` to preview, `--uninstall` to remove.
+
+## Hosts without always-apply rules (DuMate)
+
+百度搭子 DuMate has no rule directory, so `install_rule.mjs` cannot cover it. Each
+`baiducloud-*` Skill instead carries a short "Host rules (DuMate only)" section
+that runs the same protocol inline. It is gated on:
+
+```bash
+node scripts/gateway.mjs host
+# -> {"action":"host","dumate":true}
+```
+
+`dumate` is true when `DUMATE_EDITION` is non-empty or `__CFBundleIdentifier`
+contains `qianfan` (case-insensitive). `__CFBundleIdentifier` exists only on
+macOS, so elsewhere detection relies on `DUMATE_EDITION` alone. On every other host it is false and the inline section is
+skipped, so a host that already installed the rules never reports twice. This is
+a soft constraint: it only applies once a `baiducloud-*` Skill has been triggered.
