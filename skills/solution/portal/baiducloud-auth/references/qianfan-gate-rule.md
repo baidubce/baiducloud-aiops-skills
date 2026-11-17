@@ -43,12 +43,16 @@ exit 0 or exit 3.
   log in again, then run the check again.
 - Any other failure: report it, and continue only if the user agrees.
 
-If, while working, a `qianfan` command or any `qianfan-*` Skill reports that the
-login expired (output contains "登录已过期", `login expired`, or the error code
+If, while working, a `qianfan` command or any `qianfan-*` Skill reports that
+Qianfan is not logged in or the login expired (output contains "登录已过期",
+"未登录", `login expired`, `not logged in`, or the error code
 `CREDENTIAL_NOT_FOUND`), do not ask: run `sync_qianfan.mjs sync` right away. It
 renews the bce credentials with `bce auth refresh` when they are about to expire,
-then renews the Qianfan login from bce. After it succeeds, retry the command that
+then logs in or renews Qianfan from bce. After it succeeds, retry the command that
 failed exactly once; if it still fails, report that instead of retrying again.
+Do the same once for `AUTH_FAILED` or `LOGIN_FAILED`. Prefer this over
+`qianfan auth login`; ask the user to run `bce auth login` only if `sync` fails
+because bce is not logged in or its refresh failed.
 Exit 4 from `sync` is handled as an account mismatch (see above). `check` also
 does this proactively when it sees that the Qianfan login has expired.
 
@@ -61,3 +65,8 @@ contents of `~/.bce/oauth` or `~/.qianfan`. Account ids appear masked in the
 script output; keep them masked.
 
 Do not run the check for pure Q&A that does not execute any `qianfan` command.
+
+For Qianfan tasks, start from the `baiducloud-qianfan` Skill when it is installed,
+then decide whether a `qianfan-*` Skill is needed for details. Do not run
+`qianfan +connect` on your own; it only installs `qianfan-*` Skills that bypass
+this check.
